@@ -1,0 +1,21 @@
+{
+  "name": "fraud-dashboard-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Backend Node.js + PostgreSQL cho dashboard phát hiện giao dịch bất thường",
+  "main": "src/app.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "node --watch src/app.js",
+    "db:init": "node db/init.js",
+    "db:reset": "node db/init.js --reset"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "express": "^4.22.3",
+    "pg": "^8.23.1"
+  }
+}

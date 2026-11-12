@@ -1,0 +1,2760 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FraudRadar • Hệ thống phân tích hành vi & phát hiện giao dịch bất thường</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --bg-main: #0b0f19;
+      --bg-card: #111827;
+      --bg-card-hover: #172033;
+      --bg-input: #0e1626;
+      --border: #1f293d;
+      --border-light: #2c3a54;
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --accent: #3b82f6;
+      --accent-light: #60a5fa;
+      --accent-glow: rgba(59, 130, 246, 0.25);
+      --red: #ef4444;
+      --red-bg: rgba(239, 68, 68, 0.12);
+      --red-border: rgba(239, 68, 68, 0.3);
+      --green: #10b981;
+      --green-bg: rgba(16, 185, 129, 0.12);
+      --green-border: rgba(16, 185, 129, 0.3);
+      --amber: #f59e0b;
+      --amber-bg: rgba(245, 158, 11, 0.12);
+      --amber-border: rgba(245, 158, 11, 0.3);
+      --purple: #8b5cf6;
+      --shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --radius-xl: 18px;
+      --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', Consolas, monospace;
+    }
+
+    [data-theme="light"] {
+      --bg-main: #f1f5f9;
+      --bg-card: #ffffff;
+      --bg-card-hover: #f8fafc;
+      --bg-input: #ffffff;
+      --border: #e2e8f0;
+      --border-light: #cbd5e1;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #64748b;
+      --shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      transition: background-color 0.25s ease, color 0.25s ease;
+    }
+
+    /* Header & Navigation */
+    header {
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .header-top {
+      padding: 12px 24px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, #2563eb, #7c3aed);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      box-shadow: 0 0 15px var(--accent-glow);
+    }
+
+    .brand h1 {
+      font-size: 17px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      background: linear-gradient(90deg, #60a5fa, #c084fc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    [data-theme="light"] .brand h1 {
+      background: linear-gradient(90deg, #1d4ed8, #7e22ce);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .header-badges {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      background: var(--bg-main);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .chip.live .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: 0.4;
+        transform: scale(0.85);
+      }
+    }
+
+    /* Global Threshold Bar in Header */
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .thr-control {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--bg-main);
+      border: 1px solid var(--border);
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+    }
+
+    .thr-control input[type=range] {
+      width: 110px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .thr-val {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: var(--accent-light);
+      min-width: 32px;
+    }
+
+    .icon-btn {
+      background: var(--bg-main);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .icon-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent-light);
+    }
+
+    /* Navigation Tabs */
+    .nav-tabs {
+      display: flex;
+      overflow-x: auto;
+      padding: 0 24px;
+      gap: 4px;
+      scrollbar-width: none;
+    }
+
+    .nav-tabs::-webkit-scrollbar {
+      display: none;
+    }
+
+    .nav-tab {
+      padding: 12px 18px;
+      color: var(--text-secondary);
+      font-size: 13px;
+      font-weight: 600;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+      user-select: none;
+    }
+
+    .nav-tab:hover {
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .nav-tab.active {
+      color: var(--accent-light);
+      border-bottom-color: var(--accent);
+      background: rgba(59, 130, 246, 0.05);
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      max-width: 1440px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .page-view {
+      display: none;
+      animation: fadeIn 0.25s ease-out;
+    }
+
+    .page-view.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Cards & Layout */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      transition: border-color 0.2s ease;
+    }
+
+    .card:hover {
+      border-color: var(--border-light);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-hint {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .grid {
+      display: grid;
+      gap: 18px;
+      margin-bottom: 22px;
+    }
+
+    .grid-kpis {
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+
+    .grid-2 {
+      grid-template-columns: repeat(auto-fit, minmax(520px, 1fr));
+    }
+
+    @media (max-width: 768px) {
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+
+      main {
+        padding: 14px;
+      }
+
+      .header-top {
+        padding: 10px 14px;
+      }
+    }
+
+    /* KPIs */
+    .kpi-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--accent);
+      opacity: 0.7;
+    }
+
+    .kpi-card.kpi-red::before {
+      background: var(--red);
+    }
+
+    .kpi-card.kpi-green::before {
+      background: var(--green);
+    }
+
+    .kpi-card.kpi-amber::before {
+      background: var(--amber);
+    }
+
+    .kpi-card.kpi-purple::before {
+      background: var(--purple);
+    }
+
+    .kpi-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .kpi-value {
+      font-size: 26px;
+      font-weight: 800;
+      font-family: var(--font-mono);
+      color: var(--text-primary);
+      margin: 6px 0 2px;
+    }
+
+    .kpi-sub {
+      font-size: 11px;
+      color: var(--text-secondary);
+      min-height: 16px;
+    }
+
+    /* Confusion Matrix */
+    .cm-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 6px;
+      text-align: center;
+    }
+
+    .cm-table th,
+    .cm-table td {
+      padding: 12px 10px;
+      border-radius: var(--radius-md);
+    }
+
+    .cm-table th {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .cm-cell {
+      font-family: var(--font-mono);
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .cm-cell small {
+      display: block;
+      font-family: var(--font-sans);
+      font-size: 11px;
+      font-weight: 400;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    .cm-tp {
+      background: var(--green-bg);
+      color: var(--green);
+      border: 1px solid var(--green-border);
+    }
+
+    .cm-tn {
+      background: rgba(59, 130, 246, 0.12);
+      color: var(--accent-light);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+
+    .cm-fp {
+      background: var(--amber-bg);
+      color: var(--amber);
+      border: 1px solid var(--amber-border);
+    }
+
+    .cm-fn {
+      background: var(--red-bg);
+      color: var(--red);
+      border: 1px solid var(--red-border);
+    }
+
+    /* Charts */
+    .chart-container {
+      position: relative;
+      height: 320px;
+      width: 100%;
+    }
+
+    /* Figure Cards in EDA & ML */
+    .figure-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow);
+    }
+
+    .figure-img-wrap {
+      background: #080c14;
+      padding: 12px;
+      text-align: center;
+      position: relative;
+      min-height: 280px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .figure-img-wrap img {
+      max-width: 100%;
+      max-height: 420px;
+      object-fit: contain;
+      border-radius: var(--radius-sm);
+      transition: transform 0.25s ease;
+    }
+
+    .figure-img-wrap:hover img {
+      transform: scale(1.015);
+    }
+
+    .figure-body {
+      padding: 16px 20px 20px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .figure-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+    }
+
+    .figure-desc {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 12px;
+    }
+
+    /* Toggle Detail Box */
+    .btn-detail-toggle {
+      background: var(--bg-main);
+      border: 1px solid var(--border);
+      color: var(--accent-light);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 7px 14px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 10px;
+      transition: all 0.2s;
+    }
+
+    .btn-detail-toggle:hover {
+      border-color: var(--accent);
+      background: rgba(59, 130, 246, 0.08);
+    }
+
+    .chart-detail-box {
+      display: none;
+      margin-top: 14px;
+      padding: 14px 16px;
+      background: var(--bg-main);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: var(--radius-sm);
+      font-size: 12.5px;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      animation: fadeIn 0.2s ease-out;
+    }
+
+    .chart-detail-box b {
+      color: var(--text-primary);
+    }
+
+    .chart-detail-box ul {
+      margin: 6px 0 6px 20px;
+    }
+
+    /* Filters & Inputs */
+    .filter-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px 20px;
+      margin-bottom: 18px;
+    }
+
+    .filter-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      align-items: flex-end;
+    }
+
+    .filter-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    select,
+    input,
+    textarea {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      border-radius: var(--radius-sm);
+      padding: 8px 12px;
+      font-family: inherit;
+      font-size: 12px;
+      transition: border-color 0.15s;
+    }
+
+    select:focus,
+    input:focus,
+    textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-glow);
+    }
+
+    button {
+      font-family: inherit;
+      cursor: pointer;
+      border: 1px solid transparent;
+      border-radius: var(--radius-sm);
+      padding: 8px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    button.btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    button.btn-primary:hover {
+      background: #2563eb;
+    }
+
+    button.btn-ghost {
+      background: transparent;
+      border-color: var(--border);
+      color: var(--text-secondary);
+    }
+
+    button.btn-ghost:hover {
+      border-color: var(--text-secondary);
+      color: var(--text-primary);
+    }
+
+    button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    /* Tables */
+    .table-responsive {
+      overflow-x: auto;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+    }
+
+    table.data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    table.data-table th {
+      background: var(--bg-main);
+      color: var(--text-muted);
+      font-weight: 600;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    table.data-table td {
+      padding: 11px 14px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-secondary);
+    }
+
+    table.data-table tbody tr:hover {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .badge-high {
+      background: var(--red-bg);
+      color: var(--red);
+      border: 1px solid var(--red-border);
+    }
+
+    .badge-med {
+      background: var(--amber-bg);
+      color: var(--amber);
+      border: 1px solid var(--amber-border);
+    }
+
+    .badge-low {
+      background: var(--green-bg);
+      color: var(--green);
+      border: 1px solid var(--green-border);
+    }
+
+    .badge-gray {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-muted);
+    }
+
+    /* Progress bar */
+    .prob-bar-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 140px;
+    }
+
+    .prob-bar {
+      flex: 1;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .prob-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #f59e0b, #ef4444);
+    }
+
+    /* Smart Form in Scoring Simulator */
+    .form-section-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--accent-light);
+      margin: 16px 0 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border-bottom: 1px dashed var(--border);
+      padding-bottom: 4px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 14px;
+    }
+
+    .field-card {
+      background: var(--bg-main);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      transition: border-color 0.15s;
+    }
+
+    .field-card:hover {
+      border-color: var(--border-light);
+    }
+
+    .field-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .field-name {
+      font-family: var(--font-mono);
+      color: var(--accent-light);
+      font-size: 11px;
+    }
+
+    .field-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.35;
+    }
+
+    .field-req {
+      color: var(--red);
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    /* Preset Pills */
+    .presets {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .preset-btn {
+      background: var(--bg-main);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 6px 14px;
+      border-radius: 999px;
+    }
+
+    .preset-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent-light);
+    }
+
+    /* Scoring Result Box */
+    .score-result {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      background: var(--bg-main);
+      margin-top: 16px;
+    }
+
+    .gauge-box {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .score-number {
+      font-size: 40px;
+      font-weight: 800;
+      font-family: var(--font-mono);
+      line-height: 1;
+    }
+
+    /* Modal Dialog */
+    dialog {
+      background: var(--bg-card);
+      color: var(--text-primary);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-xl);
+      max-width: 720px;
+      width: 90vw;
+      padding: 24px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+      margin: auto;
+    }
+
+    dialog::backdrop {
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+    }
+
+    dl.meta-dl {
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      gap: 8px 16px;
+      font-size: 12px;
+      margin: 14px 0;
+    }
+
+    dl.meta-dl dt {
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    dl.meta-dl dd {
+      color: var(--text-primary);
+      margin: 0;
+      font-family: var(--font-mono);
+      word-break: break-all;
+    }
+
+    /* Image Lightbox Modal */
+    #imgModal img {
+      max-width: 100%;
+      max-height: 80vh;
+      border-radius: var(--radius-md);
+    }
+
+    /* Footer */
+    footer {
+      padding: 20px 24px;
+      border-top: 1px solid var(--border);
+      background: var(--bg-card);
+      font-size: 12px;
+      color: var(--text-muted);
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <div class="header-top">
+      <div class="brand">
+        <div class="brand-logo">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            <path d="M9 12l2 2 4-4" />
+          </svg>
+        </div>
+        <div>
+          <h1>FraudRadar AI</h1>
+          <div class="brand-sub">Hệ thống phân tích hành vi &amp; phát hiện giao dịch bất thường</div>
+        </div>
+      </div>
+
+      <div class="header-badges">
+        <div class="chip live" title="Hệ thống Backend &amp; PostgreSQL hoạt động ổn định">
+          <span class="dot"></span> <span>Live Ops</span>
+        </div>
+        <div class="chip" id="modelChip">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 6v6l4 2" />
+          </svg>
+          <span id="modelName">Ensemble NN (60%) + RF (40%)</span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <div class="thr-control" title="Điều chỉnh ngưỡng quyết định cảnh báo rủi ro toàn hệ thống">
+          <span>Ngưỡng:</span>
+          <input type="range" id="globalThr" min="0.05" max="0.95" step="0.01" value="0.5">
+          <span class="thr-val" id="globalThrVal">0.50</span>
+          <button class="btn-ghost" id="btnResetThr" style="padding:2px 8px; font-size:11px;"
+            title="Khôi phục ngưỡng tối ưu chọn trên tập validation">Mặc định</button>
+        </div>
+        <button class="icon-btn" id="btnThemeToggle" title="Chuyển chế độ Sáng / Tối">
+          <span id="themeIcon">🌙</span>
+        </button>
+        <button class="icon-btn" id="btnAbout" title="Xem thông tin giới thiệu đề tài">
+          <span>Đề tài ℹ️</span>
+        </button>
+      </div>
+    </div>
+
+    <nav class="nav-tabs" id="navTabs">
+      <div class="nav-tab active" data-page="page-monitoring">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 3v18h18" />
+          <path d="M18 17V9" />
+          <path d="M13 17V5" />
+          <path d="M8 17v-3" />
+        </svg>
+        1. Giám sát &amp; Vận hành
+      </div>
+      <div class="nav-tab" data-page="page-eda">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10" />
+          <path d="m4.93 4.93 4.24 4.24" />
+          <path d="m14.83 9.17 4.24-4.24" />
+          <path d="m14.83 14.83 4.24 4.24" />
+          <path d="m9.17 14.83-4.24 4.24" />
+        </svg>
+        2. Khám phá &amp; Tiền xử lý (EDA)
+      </div>
+      <div class="nav-tab" data-page="page-ml">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect width="18" height="18" x="3" y="3" rx="2" />
+          <path d="M7 7h.01" />
+          <path d="M17 7h.01" />
+          <path d="M7 17h.01" />
+          <path d="M17 17h.01" />
+        </svg>
+        3. Mô hình Machine Learning &amp; Tập mục
+      </div>
+      <div class="nav-tab" data-page="page-transactions">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <path d="M14 2v6h6" />
+          <path d="M16 13H8" />
+          <path d="M16 17H8" />
+          <path d="M10 9H8" />
+        </svg>
+        4. Danh sách &amp; Truy vấn giao dịch
+      </div>
+      <div class="nav-tab" data-page="page-simulator">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+        </svg>
+        5. Chấm điểm giao dịch mới
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <!-- PAGE 1: LIVE OPS & MONITORING -->
+    <section id="page-monitoring" class="page-view active">
+      <!-- KPIs -->
+      <div class="grid grid-kpis" id="kpiBox">
+        <!-- Generated by JS -->
+      </div>
+
+      <!-- CM & PR Curve -->
+      <div class="grid grid-2">
+        <!-- Card: Confusion Matrix -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Ma trận nhầm lẫn (Confusion Matrix)</div>
+              <div class="card-hint">Tại ngưỡng cắt đang chọn: hàng = thực tế, cột = mô hình phán đoán</div>
+            </div>
+            <span class="badge badge-gray" id="cmThresholdTag">Thr = 0.50</span>
+          </div>
+          <div id="cmTableBox"></div>
+          <button class="btn-detail-toggle" onclick="toggleDetail('desc-cm')">📖 Chi tiết - Phân tích &amp; Mô
+            tả</button>
+          <div class="chart-detail-box" id="desc-cm">
+            <b>Ý nghĩa và thông số của Ma trận nhầm lẫn:</b>
+            <ul>
+              <li><b>True Positive (TP - Bắt đúng):</b> Số lượng giao dịch gian lận thực tế mà mô hình gắn cờ cảnh báo
+                thành công.</li>
+              <li><b>False Positive (FP - Báo động giả):</b> Giao dịch bình thường nhưng bị cảnh báo nhầm là gian lận,
+                gây phiền toái cho khách hàng.</li>
+              <li><b>False Negative (FN - Bỏ sót):</b> Giao dịch gian lận lọt lưới không bị cảnh báo, gây thất thoát tài
+                chính cho ngân hàng.</li>
+              <li><b>True Negative (TN - Đúng chuẩn):</b> Giao dịch hợp lệ được duyệt thông suốt.</li>
+              <li><b>Cách điều chỉnh:</b> Kéo ngưỡng sang phải (tăng) sẽ giảm thiểu báo động giả (FP) nhưng tăng bỏ sót
+                (FN); kéo sang trái (giảm) sẽ bắt được nhiều fraud hơn (tăng Recall) nhưng chịu nhiều báo động giả hơn.
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Card: PR Curve -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Đường cong Precision – Recall (PR Curve)</div>
+              <div class="card-hint">Mỗi điểm là một ngưỡng. Chấm đỏ là vị trí ngưỡng hiện tại; đường đứt là precision
+                hiệu chỉnh</div>
+            </div>
+          </div>
+          <div class="chart-container"><canvas id="chartPR"></canvas></div>
+          <button class="btn-detail-toggle" onclick="toggleDetail('desc-pr')">📖 Chi tiết - Phân tích &amp; Mô
+            tả</button>
+          <div class="chart-detail-box" id="desc-pr">
+            <b>Ý nghĩa và thông số của Đường cong PR:</b>
+            <ul>
+              <li><b>Trục X (Recall - Độ nhạy):</b> Tỷ lệ các ca gian lận thực tế được hệ thống phát hiện (TP / (TP +
+                FN)).</li>
+              <li><b>Trục Y (Precision - Độ chính xác):</b> Tỷ lệ giao dịch thực sự là fraud trong số tất cả các ca bị
+                cảnh báo (TP / (TP + FP)).</li>
+              <li><b>Đường màu xanh (Mẫu test 10%):</b> Đường cong phản ánh chất lượng phân tách của mô hình trên mẫu
+                nghiên cứu.</li>
+              <li><b>Đường nét đứt màu vàng (Thực tế 3.5%):</b> Precision hiệu chỉnh theo công thức Bayes với giả định
+                tỷ lệ gian lận thực tế ngoài đời là 3.5%.</li>
+              <li><b>Chấm tròn đỏ:</b> Vị trí hoạt động thực tế ứng với ngưỡng cắt đang chọn trên thanh trượt Header.
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hourly & Weekly Trends -->
+      <div class="grid grid-2">
+        <!-- Card: Hourly -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Xu hướng theo giờ trong ngày</div>
+              <div class="card-hint">Số lượng giao dịch (cột xám) so với tỷ lệ fraud thực tế và tỷ lệ bị cảnh báo</div>
+            </div>
+          </div>
+          <div class="chart-container"><canvas id="chartHour"></canvas></div>
+          <button class="btn-detail-toggle" onclick="toggleDetail('desc-hour')">📖 Chi tiết - Phân tích &amp; Mô
+            tả</button>
+          <div class="chart-detail-box" id="desc-hour">
+            <b>Ý nghĩa và thông số biểu đồ theo giờ:</b>
+            <ul>
+              <li><b>Cột màu xám (Trục phải):</b> Tổng lưu lượng giao dịch phát sinh trong từng khung giờ (từ 0h đến
+                23h).</li>
+              <li><b>Đường màu đỏ (Trục trái):</b> Tỷ lệ giao dịch gian lận thực tế phát sinh trong giờ đó (%).</li>
+              <li><b>Đường màu xanh (Trục trái):</b> Tỷ lệ giao dịch bị mô hình gắn cờ cảnh báo (%).</li>
+              <li><b>Ý nghĩa phân tích:</b> Giúp phát hiện khung giờ tấn công cao điểm (đặc biệt khoảng 5h - 9h sáng
+                tương đối), giúp trung tâm vận hành sắp xếp ca trực kiểm duyệt rủi ro phù hợp.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Card: Weekly -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Hiệu năng theo tuần tương đối</div>
+              <div class="card-hint">Theo dõi độ ổn định của mô hình qua các tuần giao dịch (TransactionDT / 7 ngày)
+              </div>
+            </div>
+          </div>
+          <div class="chart-container"><canvas id="chartWeek"></canvas></div>
+          <button class="btn-detail-toggle" onclick="toggleDetail('desc-week')">📖 Chi tiết - Phân tích &amp; Mô
+            tả</button>
+          <div class="chart-detail-box" id="desc-week">
+            <b>Ý nghĩa và thông số biểu đồ theo tuần:</b>
+            <ul>
+              <li><b>Đường màu đỏ:</b> Tổng số ca gian lận thực tế xảy ra trong mỗi tuần.</li>
+              <li><b>Đường màu xanh:</b> Tổng số giao dịch bị hệ thống cảnh báo rủi ro trong tuần.</li>
+              <li><b>Đường màu xanh lục:</b> Số ca gian lận bắt trúng thực tế (TP) trong tuần đó.</li>
+              <li><b>Ý nghĩa đánh giá:</b> Đánh giá xem mô hình có bị suy giảm hiệu năng (Concept Drift) theo thời gian
+                hay không. Khoảng cách giữa đường xanh lục và đường đỏ càng hẹp chứng tỏ mô hình bắt càng triệt để.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Score Distribution & Product Risk -->
+      <div class="grid grid-2">
+        <!-- Card: Score Distribution -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Phân phối điểm số theo nhãn thực tế</div>
+              <div class="card-hint">Mô hình phân tách lớp gian lận (đỏ) và bình thường (xanh) tốt đến đâu. Vạch đứt
+                vàng là ngưỡng</div>
+            </div>
+          </div>
+          <div class="chart-container"><canvas id="chartDist"></canvas></div>
+          <button class="btn-detail-toggle" onclick="toggleDetail('desc-dist')">📖 Chi tiết - Phân tích &amp; Mô
+            tả</button>
+          <div class="chart-detail-box" id="desc-dist">
+            <b>Ý nghĩa và thông số biểu đồ phân phối điểm:</b>
+            <ul>
+              <li><b>Trục X (Điểm số rủi ro 0.00 - 1.00):</b> Chia thành 20 khoảng điểm (bins) mà mô hình Ensemble dự
+                đoán.</li>
+              <li><b>Trục Y (% của lớp):</b> Tỷ lệ phần trăm số giao dịch của từng lớp rơi vào khoảng điểm tương ứng.
+              </li>
+              <li><b>Cột màu xanh (Bình thường):</b> Tập trung áp đảo ở vùng điểm thấp (gần 0.0 - 0.2), cho thấy mô hình
+                nhận biết tốt giao dịch lành mạnh.</li>
+              <li><b>Cột màu đỏ (Gian lận):</b> Tập trung ở vùng điểm cao (trên 0.7 - 0.9), cho thấy khả năng phân tách
+                2 lớp rõ rệt.</li>
+              <li><b>Vạch nét đứt vàng:</b> Ngưỡng quyết định hiện tại. Điểm nằm bên phải vạch sẽ bị hệ thống gắn cờ
+                cảnh báo.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Card: Product Risk -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Tỷ lệ rủi ro theo loại sản phẩm (ProductCD)</div>
+              <div class="card-hint">So sánh tỷ lệ fraud thực tế và tỷ lệ bị cảnh báo trên từng nhóm sản phẩm C, H, R,
+                S, W</div>
+            </div>
+          </div>
+          <div class="chart-container"><canvas id="chartProd"></canvas></div>
+          <button class="btn-detail-toggle" onclick="toggleDetail('desc-prod')">📖 Chi tiết - Phân tích &amp; Mô
+            tả</button>
+          <div class="chart-detail-box" id="desc-prod">
+            <b>Ý nghĩa và thông số rủi ro theo sản phẩm:</b>
+            <ul>
+              <li><b>Trục hoành:</b> Các mã sản phẩm/dịch vụ (C = Commercial Claim, H = Helpdesk, R = Retail recurring,
+                S = Store, W = Web/Online) kèm số lượng mẫu (n).</li>
+              <li><b>Cột màu đỏ:</b> Tỷ lệ phần trăm giao dịch gian lận thực tế trên sản phẩm đó.</li>
+              <li><b>Cột màu xanh:</b> Tỷ lệ phần trăm giao dịch bị mô hình cảnh báo.</li>
+              <li><b>Nhận định:</b> Sản phẩm C (Commercial) thường có tỷ lệ gian lận cao đột biến, trong khi sản phẩm W
+                (Web) chiếm số lượng giao dịch áp đảo nhất.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE 2: EDA & PREPROCESSING (TỐI ĐA 2 BIỂU ĐỒ TRÊN 1 HÀNG) -->
+    <section id="page-eda" class="page-view">
+      <div class="grid grid-2">
+        <!-- 1. Fraud Distribution -->
+        <div class="figure-card">
+          <div class="figure-img-wrap" onclick="zoomImg('/reports/01_fraud_distribution.png')">
+            <img src="/reports/01_fraud_distribution.png" alt="Phân phối tỷ lệ gian lận">
+          </div>
+          <div class="figure-body">
+            <div class="figure-title">1. Mất cân bằng dữ liệu &amp; Tỷ lệ lấy mẫu</div>
+            <div class="figure-desc">
+              So sánh tỷ lệ giao dịch gian lận trong tập dữ liệu gốc IEEE-CIS và tập mẫu nghiên cứu dùng để huấn luyện
+              mô hình.
+            </div>
+            <button class="btn-detail-toggle" onclick="toggleDetail('desc-eda-1')">📖 Chi tiết - Phân tích &amp; Mô
+              tả</button>
+            <div class="chart-detail-box" id="desc-eda-1">
+              <b>Chi tiết thông số &amp; Phân tích biểu đồ:</b>
+              <ul>
+                <li><b>Tập dữ liệu gốc (Kaggle IEEE-CIS):</b> Có 590.540 giao dịch nhưng chỉ có 20.663 ca gian lận,
+                  tương ứng tỷ lệ <b>3.5%</b>. Đây là hiện tượng mất cân bằng lớp cực đại (Extreme Class Imbalance).
+                </li>
+                <li><b>Tập lấy mẫu (200.000 dòng):</b> Được lấy mẫu có chủ đích với tỷ lệ gian lận <b>10.3%</b> để mô
+                  hình có đủ mẫu học tập các thuộc tính dị biệt.</li>
+                <li><b>Tác động tới độ đo:</b> Độ chính xác thông thường (Accuracy) sẽ đạt 96.5% ngay cả khi đoán tất cả
+                  là bình thường. Do đó, bài toán bắt buộc sử dụng <b>PR-AUC</b> và <b>F1-Score</b> làm tiêu chuẩn đánh
+                  giá.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Amount Distribution -->
+        <div class="figure-card">
+          <div class="figure-img-wrap" onclick="zoomImg('/reports/02_amount_distribution.png')">
+            <img src="/reports/02_amount_distribution.png" alt="Phân phối số tiền giao dịch">
+          </div>
+          <div class="figure-body">
+            <div class="figure-title">2. Phân phối số tiền thanh toán (Amount Distribution)</div>
+            <div class="figure-desc">
+              Biểu đồ tần suất số tiền giao dịch gốc (USD) thể hiện hiện tượng phân phối đuôi dài lệch phải cực đoan.
+            </div>
+            <button class="btn-detail-toggle" onclick="toggleDetail('desc-eda-2')">📖 Chi tiết - Phân tích &amp; Mô
+              tả</button>
+            <div class="chart-detail-box" id="desc-eda-2">
+              <b>Chi tiết thông số &amp; Phân tích biểu đồ:</b>
+              <ul>
+                <li><b>Trục X:</b> Số tiền giao dịch tính bằng USD (từ 0 đến hơn 5.000 USD).</li>
+                <li><b>Trục Y:</b> Số lượng giao dịch tương ứng với từng khoảng tiền.</li>
+                <li><b>Phân tích:</b> Hơn 85% giao dịch tập trung dưới 150 USD (trung vị khoảng 68.50 USD). Tuy nhiên,
+                  có những giao dịch lên tới hàng nghìn USD kéo đuôi phân phối lệch phải cực kỳ nặng.</li>
+                <li><b>Hệ quả:</b> Hiện tượng lệch phân phối này làm các mô hình tuyến tính và mạng nơ-ron bị bão hòa
+                  trọng số nếu không được biến đổi chuẩn hóa.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Log Transform -->
+        <div class="figure-card">
+          <div class="figure-img-wrap" onclick="zoomImg('/reports/log_transform_amt.png')">
+            <img src="/reports/log_transform_amt.png" alt="Biến đổi Log Transform">
+          </div>
+          <div class="figure-body">
+            <div class="figure-title">3. Kỹ thuật biến đổi Log-Transform cho số tiền</div>
+            <div class="figure-desc">
+              So sánh hình dạng phân phối của biến số tiền trước và sau khi áp dụng phép biến đổi logarit tự nhiên.
+            </div>
+            <button class="btn-detail-toggle" onclick="toggleDetail('desc-eda-3')">📖 Chi tiết - Phân tích &amp; Mô
+              tả</button>
+            <div class="chart-detail-box" id="desc-eda-3">
+              <b>Chi tiết thông số &amp; Phân tích biểu đồ:</b>
+              <ul>
+                <li><b>Công thức áp dụng:</b> <code>TransactionAmt_log = ln(1 + TransactionAmt)</code>.</li>
+                <li><b>Đồ thị bên trái (Gốc):</b> Đồ thị dốc đứng với đuôi dài vô tận, giá trị tập trung sát trục tung.
+                </li>
+                <li><b>Đồ thị bên phải (Sau Log):</b> Đưa phân phối lệch về dạng hình chuông (gần phân phối chuẩn
+                  Gaussian), trải đều trong khoảng từ 0 đến 10.</li>
+                <li><b>Hiệu quả thực tế:</b> Giúp <b>Neural Network</b> ổn định gradient khi truyền ngược và tăng tốc độ
+                  hội tụ qua từng epoch huấn luyện.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. Outlier Treatment -->
+        <div class="figure-card">
+          <div class="figure-img-wrap" onclick="zoomImg('/reports/outlier_treatment.png')">
+            <img src="/reports/outlier_treatment.png" alt="Xử lý ngoại lai Outliers">
+          </div>
+          <div class="figure-body">
+            <div class="figure-title">4. Xử lý giá trị ngoại lai (Outliers Capping)</div>
+            <div class="figure-desc">
+              Kỹ thuật cắt ngưỡng phân vị 99% (Winsorization) đối với các biến khoảng cách và bộ đếm hành vi.
+            </div>
+            <button class="btn-detail-toggle" onclick="toggleDetail('desc-eda-4')">📖 Chi tiết - Phân tích &amp; Mô
+              tả</button>
+            <div class="chart-detail-box" id="desc-eda-4">
+              <b>Chi tiết thông số &amp; Phân tích biểu đồ:</b>
+              <ul>
+                <li><b>Các biến áp dụng:</b> Khoảng cách địa lý <code>dist1, dist2</code> và các bộ đếm giao dịch
+                  <code>C1, C2, C6</code>.</li>
+                <li><b>Vấn đề:</b> Tồn tại những giá trị dị biệt như khoảng cách >10.000 dặm hoặc số lần quẹt thẻ >5.000
+                  lần (do lỗi hệ thống hoặc bot spam).</li>
+                <li><b>Giải pháp:</b> Cắt ngưỡng tại phân vị 99% (99th percentile), mọi giá trị vượt quá mốc này được
+                  gán bằng giá trị tại mốc 99%.</li>
+                <li><b>Kết quả:</b> Loại bỏ ảnh hưởng độc hại của các điểm dị biệt mà không làm mất đi các dòng dữ liệu
+                  quý giá.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. Time Behavior -->
+        <div class="figure-card">
+          <div class="figure-img-wrap" onclick="zoomImg('/reports/03_fraud_by_time.png')">
+            <img src="/reports/03_fraud_by_time.png" alt="Phân tích hành vi theo thời gian">
+          </div>
+          <div class="figure-body">
+            <div class="figure-title">5. Hành vi gian lận theo chu kỳ thời gian</div>
+            <div class="figure-desc">
+              Khám phá quy luật phân bổ gian lận theo giờ trong ngày, ngày trong tuần và đặc trưng ban đêm.
+            </div>
+            <button class="btn-detail-toggle" onclick="toggleDetail('desc-eda-5')">📖 Chi tiết - Phân tích &amp; Mô
+              tả</button>
+            <div class="chart-detail-box" id="desc-eda-5">
+              <b>Chi tiết thông số &amp; Phân tích biểu đồ:</b>
+              <ul>
+                <li><b>Phân tích theo giờ (Hour of Day):</b> Tỷ lệ gian lận tăng đột biến trong khung giờ 5h - 9h sáng
+                  (tương đối theo bộ dữ liệu), đạt mức trên 15% so với mức trung bình 8% ban ngày.</li>
+                <li><b>Phân tích theo thứ (Day of Week):</b> Gian lận phân bố tương đối đều nhưng có xu hướng tăng nhẹ
+                  vào các ngày giữa tuần.</li>
+                <li><b>Kỹ thuật Feature Engineering:</b> Tạo đặc trưng nhị phân <code>is_night</code> (1 nếu rơi vào
+                  khung giờ đêm muộn, 0 nếu ban ngày) làm tăng khả năng phát hiện của các cây quyết định.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- 6. Correlation Heatmap -->
+        <div class="figure-card">
+          <div class="figure-img-wrap" onclick="zoomImg('/reports/04_correlation_heatmap.png')">
+            <img src="/reports/04_correlation_heatmap.png" alt="Bản đồ nhiệt tương quan">
+          </div>
+          <div class="figure-body">
+            <div class="figure-title">6. Bản đồ nhiệt tương quan đa biến (Correlation Heatmap)</div>
+            <div class="figure-desc">
+              Phân tích ma trận hệ số tương quan Pearson giữa tất cả các cặp đặc trưng liên tục trong tập dữ liệu.
+            </div>
+            <button class="btn-detail-toggle" onclick="toggleDetail('desc-eda-6')">📖 Chi tiết - Phân tích &amp; Mô
+              tả</button>
+            <div class="chart-detail-box" id="desc-eda-6">
+              <b>Chi tiết thông số &amp; Phân tích biểu đồ:</b>
+              <ul>
+                <li><b>Màu sắc:</b> Đỏ đậm biểu thị tương quan dương rất mạnh (hệ số r &gt; 0.8), xanh đậm biểu thị
+                  tương quan âm.</li>
+                <li><b>Hiện tượng đa cộng tuyến (Multicollinearity):</b> Cặp biến <code>C1 - C2</code> (hệ số r = 0.89),
+                  <code>D1 - D4</code> (hệ số r = 0.82) mang thông tin gần như trùng lặp nhau.</li>
+                <li><b>Hành động xử lý:</b> Loại bỏ các biến thừa để tránh làm sai lệch ước lượng hồi quy và tạo 2 biến
+                  tổng hợp mang tính đại diện cao là <code>C_total</code> và <code>D_total</code>.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- 7. Top Features Comparison -->
+        <div class="figure-card">
+          <div class="figure-img-wrap" onclick="zoomImg('/reports/05_top_features_comparison.png')">
+            <img src="/reports/05_top_features_comparison.png" alt="So sánh đặc trưng trọng yếu">
+          </div>
+          <div class="figure-body">
+            <div class="figure-title">7. So sánh phân phối các đặc trưng trọng yếu</div>
+            <div class="figure-desc">
+              Đối chiếu phân phối giữa giao dịch Hợp lệ và Gian lận trên các trường quan trọng nhất: C_total, D_total,
+              dist1.
+            </div>
+            <button class="btn-detail-toggle" onclick="toggleDetail('desc-eda-7')">📖 Chi tiết - Phân tích &amp; Mô
+              tả</button>
+            <div class="chart-detail-box" id="desc-eda-7">
+              <b>Chi tiết thông số &amp; Phân tích biểu đồ:</b>
+              <ul>
+                <li><b>C_total (Tổng số liên kết thẻ):</b> Giao dịch gian lận có giá trị <code>C_total</code> cao hơn rõ
+                  rệt (hành vi bot thử quẹt thẻ trên nhiều website).</li>
+                <li><b>D_total (Thời gian hoạt động):</b> Giao dịch gian lận có giá trị <code>D_total</code> rất thấp
+                  (thẻ mới tạo hoặc mới bị đánh cắp).</li>
+                <li><b>dist1 (Khoảng cách):</b> Giao dịch gian lận có phân bố khoảng cách xa hơn so với vị trí đăng ký
+                  thường trú của chủ thẻ.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- 8. SMOTE Balance -->
+        <div class="figure-card">
+          <div class="figure-img-wrap" onclick="zoomImg('/reports/06_smote_balance.png')">
+            <img src="/reports/06_smote_balance.png" alt="Cân bằng mẫu SMOTE">
+          </div>
+          <div class="figure-body">
+            <div class="figure-title">8. Kỹ thuật cân bằng dữ liệu SMOTE</div>
+            <div class="figure-desc">
+              Trực quan hóa số lượng mẫu trước và sau khi áp dụng thuật toán tạo mẫu tổng hợp cho lớp thiểu số.
+            </div>
+            <button class="btn-detail-toggle" onclick="toggleDetail('desc-eda-8')">📖 Chi tiết - Phân tích &amp; Mô
+              tả</button>
+            <div class="chart-detail-box" id="desc-eda-8">
+              <b>Chi tiết thông số &amp; Phân tích biểu đồ:</b>
+              <ul>
+                <li><b>Cột bên trái (Gốc):</b> Lớp bình thường chiếm ~90% (khoảng 126.000 mẫu train), lớp gian lận chỉ
+                  có ~14.000 mẫu.</li>
+                <li><b>Cột bên phải (SMOTE):</b> Tạo thêm các mẫu gian lận nhân tạo nằm trên đoạn thẳng nối các láng
+                  giềng gần nhất (k-NN) để đưa tỷ lệ 2 lớp về 50:50.</li>
+                <li><b>Kết quả thử nghiệm:</b> Giúp Logistic Regression tăng Recall từ 0.22 lên 0.69, tuy nhiên với
+                  Random Forest thì phương pháp gán trọng số <code>class_weight='balanced'</code> mang lại kết quả ổn
+                  định hơn.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE 3: ML MODELS & FREQUENT PATTERNS (TỐI ĐA 2 BIỂU ĐỒ TRÊN 1 HÀNG) -->
+    <section id="page-ml" class="page-view">
+      <!-- Model Comparison Table -->
+      <div class="card" style="margin-bottom:22px;">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Bảng so sánh 11 cấu hình mô hình thực nghiệm (Tập test: 30.000 giao dịch)</div>
+            <div class="card-hint">Dữ liệu đối chiếu chuẩn hóa từ file xuất model_comparison.csv</div>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table" id="tableModelComp">
+            <thead>
+              <tr>
+                <th>Tên mô hình / Thử nghiệm</th>
+                <th>Phương pháp xử lý</th>
+                <th>Ngưỡng tối ưu</th>
+                <th>Precision</th>
+                <th>Recall</th>
+                <th>F1-Score</th>
+                <th>PR-AUC</th>
+                <th>ROC-AUC</th>
+              </tr>
+            </thead>
+            <tbody id="modelCompRows">
+              <!-- Rendered by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <!-- ROC & PR Comparison -->
+        <div class="figure-card">
+          <div class="figure-img-wrap" onclick="zoomImg('/reports/12_roc_pr_comparison.png')">
+            <img src="/reports/12_roc_pr_comparison.png" alt="So sánh ROC và PR Curve">
+          </div>
+          <div class="figure-body">
+            <div class="figure-title">So sánh đường cong ROC và PR giữa các mô hình</div>
+            <div class="figure-desc">
+              Đối chiếu năng lực phân loại giữa Logistic Regression, Random Forest, Neural Network và Ensemble.
+            </div>
+            <button class="btn-detail-toggle" onclick="toggleDetail('desc-ml-1')">📖 Chi tiết - Phân tích &amp; Mô
+              tả</button>
+            <div class="chart-detail-box" id="desc-ml-1">
+              <b>Chi tiết thông số &amp; Ý nghĩa khoa học:</b>
+              <ul>
+                <li><b>ROC Curve (Bên trái):</b> Cả Random Forest và Neural Network đều đạt ROC-AUC rất cao (>0.919),
+                  trong khi Logistic Regression chỉ đạt 0.786.</li>
+                <li><b>PR Curve (Bên phải):</b> Thể hiện sự chênh lệch rõ ràng hơn do dữ liệu mất cân bằng. Logistic
+                  Regression có PR-AUC chỉ 0.330; Random Forest đạt 0.710; Neural Network đạt 0.716; và <b>Ensemble đạt
+                    đỉnh cao 0.738</b>.</li>
+                <li><b>Kết luận:</b> Mô hình Ensemble tận dụng được thế mạnh phi tuyến tính của cây quyết định và khả
+                  năng học biểu diễn sâu của mạng nơ-ron.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Confusion Matrices Comparison -->
+        <div class="figure-card">
+          <div class="figure-img-wrap" onclick="zoomImg('/reports/13_confusion_matrices.png')">
+            <img src="/reports/13_confusion_matrices.png" alt="Ma trận nhầm lẫn đối chiếu">
+          </div>
+          <div class="figure-body">
+            <div class="figure-title">Ma trận nhầm lẫn so sánh các thuật toán</div>
+            <div class="figure-desc">
+              Xem chi tiết số ca bắt đúng (TP) và báo động giả (FP) của từng mô hình trên 30.000 giao dịch tập test.
+            </div>
+            <button class="btn-detail-toggle" onclick="toggleDetail('desc-ml-2')">📖 Chi tiết - Phân tích &amp; Mô
+              tả</button>
+            <div class="chart-detail-box" id="desc-ml-2">
+              <b>Chi tiết thông số &amp; Ý nghĩa:</b>
+              <ul>
+                <li><b>Logistic Regression:</b> Bắt được 2.159 ca fraud nhưng tạo ra tới 7.433 ca báo động giả
+                  (Precision chỉ 22.5%).</li>
+                <li><b>Random Forest:</b> Giảm số ca báo động giả xuống chỉ còn 975 ca, bắt đúng 1.939 ca fraud
+                  (Precision 66.7%).</li>
+                <li><b>Ensemble NN + RF:</b> Kiểm soát báo động giả tối ưu nhất với chỉ 827 ca trong khi bắt đúng tới
+                  1.999 ca fraud (Precision 71.0%, F1 = 0.676).</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Frequent Itemsets & Feature Importance Section -->
+      <div class="grid grid-2">
+        <!-- Feature Importance -->
+        <div class="figure-card">
+          <div class="figure-img-wrap" onclick="zoomImg('/reports/14_feature_importance.png')">
+            <img src="/reports/14_feature_importance.png" alt="Tầm quan trọng đặc trưng">
+          </div>
+          <div class="figure-body">
+            <div class="figure-title">Tầm quan trọng đặc trưng (Feature Importance)</div>
+            <div class="figure-desc">
+              Xếp hạng các thuộc tính có ảnh hưởng lớn nhất tới quyết định phát hiện gian lận.
+            </div>
+            <button class="btn-detail-toggle" onclick="toggleDetail('desc-ml-3')">📖 Chi tiết - Phân tích &amp; Mô
+              tả</button>
+            <div class="chart-detail-box" id="desc-ml-3">
+              <b>Chi tiết thông số &amp; Quy luật phát hiện:</b>
+              <ul>
+                <li><b>Đặc trưng tần suất dẫn đầu:</b> <code>card1_freq</code> (tần suất số lần thẻ xuất hiện) và
+                  <code>addr1_freq</code> (tần suất vùng địa chỉ) xếp vị trí số 1 và số 2 về mức độ quan trọng.</li>
+                <li><b>Quy luật "Đặc trưng quan trọng hơn thuật toán":</b> Việc thêm 2 đặc trưng tần suất đã giúp Random
+                  Forest tăng vọt PR-AUC từ 0.677 lên 0.710 mà không cần đổi kiến trúc.</li>
+                <li><b>Các đặc trưng tiếp theo:</b> Biến tổng hợp <code>C_total</code>, <code>D_total</code>, số tiền
+                  <code>TransactionAmt_log</code> và khoảng cách <code>dist1</code>.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Frequent Patterns Card -->
+        <div class="figure-card">
+          <div style="padding:16px 20px; background:#080c14; border-bottom:1px solid var(--border);">
+            <div style="font-size:15px; font-weight:700; color:var(--text-primary);">Khai phá các tập mục rủi ro thường
+              xuyên (Frequent Patterns)</div>
+            <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">Các tổ hợp thuộc tính thường xuyên
+              xuất hiện đồng thời trong các vụ gian lận</div>
+          </div>
+          <div class="figure-body" style="gap:10px;">
+            <div
+              style="background:var(--bg-main); border:1px solid var(--border); border-radius:var(--radius-md); padding:10px 14px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
+                <b style="color:var(--red); font-size:12.5px;">🔥 Mẫu 1: Thẻ Debit Visa + Web (W) + Ban đêm</b>
+                <span class="badge badge-high">Risk: 68.4%</span>
+              </div>
+              <div style="font-size:11.5px; color:var(--text-secondary);">
+                <code>{ProductCD='W', card4='visa', card6='debit', is_night=1}</code> — Gian lận mua hàng online qua thẻ
+                debit bị lộ lúc nửa đêm.
+              </div>
+            </div>
+
+            <div
+              style="background:var(--bg-main); border:1px solid var(--border); border-radius:var(--radius-md); padding:10px 14px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
+                <b style="color:var(--amber); font-size:12.5px;">⚠️ Mẫu 2: Tấn công dồn dập (Burst Attack)</b>
+                <span class="badge badge-med">Risk: 82.1%</span>
+              </div>
+              <div style="font-size:11.5px; color:var(--text-secondary);">
+                <code>{C_total > 50, D_total < 3 ngày, C1 > 10}</code> — Hàng loạt giao dịch tạo nhiều liên kết IP mới
+                liên tục trong thời gian rất ngắn.
+              </div>
+            </div>
+
+            <div
+              style="background:var(--bg-main); border:1px solid var(--border); border-radius:var(--radius-md); padding:10px 14px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
+                <b style="color:var(--purple); font-size:12.5px;">🌐 Mẫu 3: Email ẩn danh + Khoảng cách xa</b>
+                <span class="badge badge-high">Risk: 74.5%</span>
+              </div>
+              <div style="font-size:11.5px; color:var(--text-secondary);">
+                <code>{dist1 > 500 dặm, P_emaildomain='anonymous', ProductCD='C'}</code> — Đơn hàng thương mại giao hàng
+                cách xa địa chỉ thẻ và dùng email ẩn danh.
+              </div>
+            </div>
+
+            <button class="btn-detail-toggle" onclick="toggleDetail('desc-ml-patterns')">📖 Chi tiết - Phân tích &amp;
+              Mô tả</button>
+            <div class="chart-detail-box" id="desc-ml-patterns">
+              <b>Ứng dụng tập mục thường xuyên trong luật phòng vệ (Rule-based Engine):</b>
+              <ul>
+                <li>Các mẫu hình trên được khai phá bằng kỹ thuật kết hợp (Association Rules / Apriori) trên các giao
+                  dịch có nhãn gian lận.</li>
+                <li>Hệ thống kết hợp các luật này với điểm số học máy để tạo nên mô hình phòng thủ 2 lớp (Two-tier
+                  Defense): chặn ngay lập tức nếu thỏa mãn mẫu hình nguy hiểm cao hoặc chấm điểm chi tiết nếu nằm trong
+                  vùng nghi vấn.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- NN Training & Error Analysis -->
+      <div class="grid grid-2">
+        <!-- NN Tuning -->
+        <div class="figure-card">
+          <div class="figure-img-wrap" onclick="zoomImg('/reports/08_nn_tuning.png')">
+            <img src="/reports/08_nn_tuning.png" alt="Tinh chỉnh siêu tham số NN">
+          </div>
+          <div class="figure-body">
+            <div class="figure-title">Quá trình tinh chỉnh siêu tham số Neural Network</div>
+            <div class="figure-desc">
+              Thử nghiệm Dropout (0.15), Batch Normalization và điều chuẩn L2 để tối ưu mạng nơ-ron.
+            </div>
+            <button class="btn-detail-toggle" onclick="toggleDetail('desc-ml-4')">📖 Chi tiết - Phân tích &amp; Mô
+              tả</button>
+            <div class="chart-detail-box" id="desc-ml-4">
+              <b>Chi tiết kết quả thực nghiệm:</b>
+              <ul>
+                <li><b>Kiến trúc mạng:</b> Tầng đầu vào 49 đặc trưng → Dense(256) → BatchNorm → Dropout(0.15) →
+                  Dense(128) → Dense(1, Sigmoid).</li>
+                <li><b>Tác dụng:</b> Giúp PR-AUC của Neural Network tăng từ 0.590 (bản cơ bản) lên <b>0.716</b>, ngăn
+                  chặn hoàn toàn hiện tượng quá khớp (Overfitting) trên dữ liệu nhiễu.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Error Analysis -->
+        <div class="figure-card">
+          <div class="figure-img-wrap" onclick="zoomImg('/reports/15_error_analysis.png')">
+            <img src="/reports/15_error_analysis.png" alt="Phân tích lỗi Error Analysis">
+          </div>
+          <div class="figure-body">
+            <div class="figure-title">Phân tích sai số mô hình (Error Analysis)</div>
+            <div class="figure-desc">
+              Khảo sát các nguyên nhân cốt lõi dẫn đến các ca phán đoán nhầm lẫn của mô hình.
+            </div>
+            <button class="btn-detail-toggle" onclick="toggleDetail('desc-ml-5')">📖 Chi tiết - Phân tích &amp; Mô
+              tả</button>
+            <div class="chart-detail-box" id="desc-ml-5">
+              <b>Nguyên nhân các ca lỗi:</b>
+              <ul>
+                <li><b>False Positives (Báo động nhầm):</b> Thường rơi vào trường hợp khách hàng thật đi du lịch nước
+                  ngoài (khoảng cách <code>dist1</code> lớn) mua sắm hàng hiệu giá trị cao.</li>
+                <li><b>False Negatives (Bỏ sót):</b> Kẻ gian cố tình chia nhỏ số tiền giao dịch dưới 15 USD và sử dụng
+                  thẻ debit đã có lịch sử giao dịch lâu năm nhằm ngụy trang thành khách hàng bình thường.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE 4: TRANSACTION EXPLORER (BẢN CHUẨN CƠ BẢN ỔN ĐỊNH 100%) -->
+    <section id="page-transactions" class="page-view">
+      <!-- Filter Panel -->
+      <div class="filter-panel">
+        <div class="filter-row">
+          <div class="filter-item">
+            <span>Mức rủi ro</span>
+            <select id="fLevel">
+              <option value="high" selected>Cao (≥ Ngưỡng)</option>
+              <option value="medium_up">Cao + Trung bình (≥ 50% Ngưỡng)</option>
+            </select>
+          </div>
+
+          <div class="filter-item">
+            <span>Loại sản phẩm</span>
+            <select id="fProduct">
+              <option value="">Tất cả</option>
+            </select>
+          </div>
+
+          <div class="filter-item">
+            <span>Số tiền tối thiểu ($ USD)</span>
+            <input type="number" id="fAmount" min="0" step="10" placeholder="0" style="width:110px;">
+          </div>
+
+          <div class="filter-item">
+            <span>Sắp xếp</span>
+            <select id="fSort">
+              <option value="probability">Xác suất cao nhất</option>
+              <option value="amount">Số tiền lớn nhất</option>
+              <option value="time">Mới nhất</option>
+            </select>
+          </div>
+
+          <div class="filter-item">
+            <span>Nguồn dữ liệu</span>
+            <select id="fSource">
+              <option value="replay" selected>Tập test Replay (Có nhãn thật)</option>
+              <option value="api">Chấm qua API</option>
+              <option value="all">Tất cả</option>
+            </select>
+          </div>
+
+          <div style="display:flex; gap:8px;">
+            <button class="btn-primary" id="btnApplyTxFilter">Lọc giao dịch</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="card">
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID Giao dịch</th>
+                <th>Thời điểm</th>
+                <th>Số tiền ($ USD)</th>
+                <th>Sản phẩm</th>
+                <th>Loại thẻ</th>
+                <th>Xác suất Fraud</th>
+                <th>Mức rủi ro</th>
+                <th>Thực tế</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="alertRows">
+              <tr>
+                <td colspan="9" style="text-align:center; padding:24px;">Đang tải danh sách giao dịch…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div
+          style="display:flex; justify-content:space-between; align-items:center; margin-top:14px; flex-wrap:wrap; gap:10px;">
+          <div style="font-size:12px; color:var(--text-muted);" id="pageInfo">Đang tải…</div>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <button class="btn-ghost" id="prev">‹ Trước</button>
+            <button class="btn-ghost" id="next">Sau ›</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE 5: FRAUD SIMULATOR -->
+    <section id="page-simulator" class="page-view">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Chấm điểm giao dịch mới (Real-time Scoring Simulator)</div>
+            <div class="card-hint">Gửi dữ liệu trực tiếp tới mô hình Ensemble để dự đoán xác suất gian lận thời gian
+              thực</div>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn-ghost active" id="btnModeForm">Form có chú thích tiếng Việt</button>
+            <button class="btn-ghost" id="btnModeJson">JSON Editor</button>
+          </div>
+        </div>
+
+        <!-- Quick Presets -->
+        <div class="presets">
+          <span style="font-size:11px; color:var(--text-muted); align-self:center;">Mẫu thử nghiệm nhanh:</span>
+          <button class="preset-btn" onclick="loadPreset('legit')">✅ Mẫu an toàn (Thẻ Debit mua hàng Web)</button>
+          <button class="preset-btn" onclick="loadPreset('fraud')">⛔ Mẫu rủi ro cao (Đêm muộn, C_total cao, Email
+            lạ)</button>
+          <button class="preset-btn" onclick="loadPreset('high_amt')">⚠️ Mẫu số tiền lớn $3.250 USD (Thẻ tín dụng
+            Amex)</button>
+        </div>
+
+        <!-- SMART FORM VIEW -->
+        <div id="simFormView">
+          <form id="scoreSmartForm" onsubmit="event.preventDefault(); scoreCurrentTx();">
+            <!-- Nhóm 1 -->
+            <div class="form-section-title">1. Thông tin giao dịch cơ bản</div>
+            <div class="form-grid">
+              <div class="field-card">
+                <div class="field-label">
+                  <span>Số tiền thanh toán <span class="field-req">*</span></span>
+                  <span class="field-name">TransactionAmt</span>
+                </div>
+                <input type="number" id="sf_TransactionAmt" step="0.01" min="0.01" value="120.50" required>
+                <div class="field-desc">Đơn vị: <b>Đô la Mỹ ($ USD)</b>. Số tiền thanh toán của giao dịch.</div>
+              </div>
+
+              <div class="field-card">
+                <div class="field-label">
+                  <span>Thời điểm giao dịch <span class="field-req">*</span></span>
+                  <span class="field-name">TransactionDT</span>
+                </div>
+                <input type="number" id="sf_TransactionDT" min="0" value="15000000" required>
+                <div class="field-desc">Đơn vị: <b>Giây (s)</b>. Thời gian tương đối kể từ mốc bắt đầu hệ thống (86.400s
+                  = 1 ngày).</div>
+              </div>
+
+              <div class="field-card">
+                <div class="field-label">
+                  <span>Mã loại sản phẩm <span class="field-req">*</span></span>
+                  <span class="field-name">ProductCD</span>
+                </div>
+                <select id="sf_ProductCD">
+                  <option value="W" selected>W (Web / Thương mại điện tử trực tuyến)</option>
+                  <option value="H">H (Helpdesk / Hỗ trợ qua điện thoại)</option>
+                  <option value="C">C (Claim / Giao dịch thương mại)</option>
+                  <option value="S">S (Store / Cửa hàng bán lẻ)</option>
+                  <option value="R">R (Retail / Thuê bao định kỳ)</option>
+                </select>
+                <div class="field-desc">Phân loại dịch vụ cung cấp trong giao dịch.</div>
+              </div>
+            </div>
+
+            <!-- Nhóm 2 -->
+            <div class="form-section-title">2. Thông tin thẻ &amp; Mạng lưới thanh toán</div>
+            <div class="form-grid">
+              <div class="field-card">
+                <div class="field-label">
+                  <span>Mã đơn vị phát hành thẻ <span class="field-req">*</span></span>
+                  <span class="field-name">card1</span>
+                </div>
+                <input type="number" id="sf_card1" value="9633" required>
+                <div class="field-desc">Đơn vị: <b>Mã ID số nguyên</b> (1.000 - 18.395). Định danh ngân hàng phát hành
+                  thẻ.</div>
+              </div>
+
+              <div class="field-card">
+                <div class="field-label">
+                  <span>Mạng lưới thẻ</span>
+                  <span class="field-name">card4</span>
+                </div>
+                <select id="sf_card4">
+                  <option value="visa" selected>Visa</option>
+                  <option value="mastercard">Mastercard</option>
+                  <option value="discover">Discover</option>
+                  <option value="american express">American Express</option>
+                  <option value="Unknown">Unknown (Chưa rõ)</option>
+                </select>
+                <div class="field-desc">Hãng thanh toán thẻ quốc tế.</div>
+              </div>
+
+              <div class="field-card">
+                <div class="field-label">
+                  <span>Loại thẻ thanh toán</span>
+                  <span class="field-name">card6</span>
+                </div>
+                <select id="sf_card6">
+                  <option value="debit" selected>Debit (Thẻ ghi nợ)</option>
+                  <option value="credit">Credit (Thẻ tín dụng)</option>
+                  <option value="charge card">Charge card (Thẻ thanh toán ngay)</option>
+                  <option value="Unknown">Unknown (Chưa rõ)</option>
+                </select>
+                <div class="field-desc">Phương thức thẻ (tín dụng hay ghi nợ).</div>
+              </div>
+            </div>
+
+            <!-- Nhóm 3 -->
+            <div class="form-section-title">3. Địa chỉ &amp; Khoảng cách địa lý</div>
+            <div class="form-grid">
+              <div class="field-card">
+                <div class="field-label">
+                  <span>Mã vùng thanh toán</span>
+                  <span class="field-name">addr1</span>
+                </div>
+                <input type="number" id="sf_addr1" value="299">
+                <div class="field-desc">Đơn vị: <b>Mã vùng (Zip/Region Code)</b>. Trung vị huấn luyện = 299.</div>
+              </div>
+
+              <div class="field-card">
+                <div class="field-label">
+                  <span>Mã quốc gia thanh toán</span>
+                  <span class="field-name">addr2</span>
+                </div>
+                <input type="number" id="sf_addr2" value="87">
+                <div class="field-desc">Đơn vị: <b>Mã nước</b>. Mã 87 tương ứng mã vùng chuẩn (Mỹ / Bắc Mỹ).</div>
+              </div>
+
+              <div class="field-card">
+                <div class="field-label">
+                  <span>Khoảng cách đến IP / Giao hàng</span>
+                  <span class="field-name">dist1</span>
+                </div>
+                <input type="number" id="sf_dist1" value="8">
+                <div class="field-desc">Đơn vị: <b>Dặm (Miles)</b>. Khoảng cách từ địa chỉ thẻ tới IP/vị trí nhận
+                  (Median: 8).</div>
+              </div>
+
+              <div class="field-card">
+                <div class="field-label">
+                  <span>Khoảng cách thứ cấp</span>
+                  <span class="field-name">dist2</span>
+                </div>
+                <input type="number" id="sf_dist2" value="41">
+                <div class="field-desc">Đơn vị: <b>Dặm (Miles)</b>. Khoảng cách bổ sung địa chỉ thứ hai (Median: 41).
+                </div>
+              </div>
+            </div>
+
+            <!-- Nhóm 4 -->
+            <div class="form-section-title">4. Thông tin Email &amp; Bộ đếm tần suất (C-Counters)</div>
+            <div class="form-grid">
+              <div class="field-card">
+                <div class="field-label">
+                  <span>Email người mua (Purchaser)</span>
+                  <span class="field-name">P_emaildomain</span>
+                </div>
+                <select id="sf_P_emaildomain">
+                  <option value="gmail" selected>gmail (Google Mail)</option>
+                  <option value="yahoo">yahoo (Yahoo Mail)</option>
+                  <option value="hotmail">hotmail (Microsoft Hotmail)</option>
+                  <option value="outlook">outlook (Microsoft Outlook)</option>
+                  <option value="icloud">icloud (Apple iCloud)</option>
+                  <option value="anonymous">anonymous (Email ẩn danh / Tạm thời)</option>
+                  <option value="other">other (Nhà cung cấp khác)</option>
+                  <option value="unknown">unknown (Không rõ)</option>
+                </select>
+                <div class="field-desc">Nhóm tên miền email của tài khoản mua hàng.</div>
+              </div>
+
+              <div class="field-card">
+                <div class="field-label">
+                  <span>Số địa chỉ liên kết với thẻ</span>
+                  <span class="field-name">C1</span>
+                </div>
+                <input type="number" id="sf_C1" value="1">
+                <div class="field-desc">Đơn vị: <b>Lượt</b>. Số lượng địa chỉ/số điện thoại liên kết thẻ (Median: 1).
+                </div>
+              </div>
+
+              <div class="field-card">
+                <div class="field-label">
+                  <span>Số giao dịch tài khoản gần đây</span>
+                  <span class="field-name">C2</span>
+                </div>
+                <input type="number" id="sf_C2" value="1">
+                <div class="field-desc">Đơn vị: <b>Lượt</b>. Tần suất quẹt thẻ gần đây của tài khoản (Median: 1).</div>
+              </div>
+
+              <div class="field-card">
+                <div class="field-label">
+                  <span>Số yêu cầu thanh toán gần đây</span>
+                  <span class="field-name">C6</span>
+                </div>
+                <input type="number" id="sf_C6" value="1">
+                <div class="field-desc">Đơn vị: <b>Lượt</b>. Số yêu cầu thanh toán gửi tới cổng kiểm tra (Median: 1).
+                </div>
+              </div>
+            </div>
+
+            <!-- Nhóm 5 -->
+            <div class="form-section-title">5. Khoảng cách thời gian (D-Deltas) &amp; Khớp nối danh tính (M-Flags)</div>
+            <div class="form-grid">
+              <div class="field-card">
+                <div class="field-label">
+                  <span>Số ngày từ giao dịch trước</span>
+                  <span class="field-name">D1</span>
+                </div>
+                <input type="number" id="sf_D1" value="2">
+                <div class="field-desc">Đơn vị: <b>Ngày (Days)</b>. Khoảng cách kể từ lần quẹt thẻ gần nhất (Median: 2).
+                </div>
+              </div>
+
+              <div class="field-card">
+                <div class="field-label">
+                  <span>Số ngày từ ngày kích hoạt thẻ</span>
+                  <span class="field-name">D4</span>
+                </div>
+                <input type="number" id="sf_D4" value="21">
+                <div class="field-desc">Đơn vị: <b>Ngày (Days)</b>. Tuổi thọ của thẻ từ lần đầu xuất hiện (Median: 21).
+                </div>
+              </div>
+
+              <div class="field-card">
+                <div class="field-label">
+                  <span>Số ngày từ giao dịch cùng thiết bị</span>
+                  <span class="field-name">D10</span>
+                </div>
+                <input type="number" id="sf_D10" value="10">
+                <div class="field-desc">Đơn vị: <b>Ngày (Days)</b>. Thời gian kể từ giao dịch gần nhất cùng thiết bị/IP
+                  (Median: 10).</div>
+              </div>
+
+              <div class="field-card">
+                <div class="field-label">
+                  <span>Phương thức xác thực</span>
+                  <span class="field-name">M4</span>
+                </div>
+                <select id="sf_M4">
+                  <option value="M0" selected>M0 (Chuẩn không có mã hóa 3D-Secure)</option>
+                  <option value="M1">M1 (Có OTP / Xác thực cấp 1)</option>
+                  <option value="M2">M2 (Xác thực bảo mật cao cấp 2)</option>
+                  <option value="Unknown">Unknown (Chưa rõ)</option>
+                </select>
+                <div class="field-desc">Mức độ bảo mật xác thực phương thức thanh toán.</div>
+              </div>
+
+              <div class="field-card">
+                <div class="field-label">
+                  <span>Khớp họ tên chủ thẻ &amp; người nhận</span>
+                  <span class="field-name">M6</span>
+                </div>
+                <select id="sf_M6">
+                  <option value="T" selected>T (Trùng khớp họ tên - True Match)</option>
+                  <option value="F">F (Không khớp họ tên - False Match)</option>
+                  <option value="Unknown">Unknown (Không xác định)</option>
+                </select>
+                <div class="field-desc">Tương quan giữa chủ tài khoản thẻ và tên người nhận hàng.</div>
+              </div>
+            </div>
+
+            <div style="margin-top:20px; display:flex; gap:10px;">
+              <button type="submit" class="btn-primary" id="btnScoreForm" style="padding:10px 24px; font-size:14px;">
+                ⚡ Chấm điểm giao dịch ngay
+              </button>
+              <button type="button" class="btn-ghost" onclick="loadPreset('legit')">Điền lại mặc định</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- JSON VIEW -->
+        <div id="simJsonView" style="display:none;">
+          <textarea id="simJsonText" style="width:100%; min-height:280px; font-family:var(--font-mono); font-size:12px;"
+            spellcheck="false"></textarea>
+          <div style="margin-top:12px;">
+            <button class="btn-primary" id="btnScoreJson" style="padding:10px 24px; font-size:14px;">⚡ Chấm điểm từ
+              JSON</button>
+          </div>
+        </div>
+
+        <!-- Result Card -->
+        <div class="score-result" id="scoreResultBox" style="display:none;">
+          <!-- Filled by JS -->
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    FraudRadar AI • Hệ thống phân tích hành vi và phát hiện giao dịch tài chính bất thường
+  </footer>
+
+  <!-- Modals -->
+  <dialog id="dlg">
+    <div class="card-header">
+      <div class="card-title">Chi tiết giao dịch</div>
+      <button class="btn-ghost" id="dlgClose">✕</button>
+    </div>
+    <div id="dlgBody"></div>
+  </dialog>
+
+  <dialog id="aboutDialog">
+    <div class="card-header">
+      <div class="card-title">Hệ thống phân tích hành vi &amp; Phát hiện giao dịch bất thường</div>
+      <button class="btn-ghost" onclick="closeDlg('aboutDialog')">✕</button>
+    </div>
+    <div style="font-size:13px; color:var(--text-secondary); line-height:1.7;">
+      <p><b>Mục tiêu đề tài:</b> Xây dựng hệ thống hoàn chỉnh có khả năng giám sát, phân tích hành vi quẹt thẻ và phát
+        hiện sớm các giao dịch gian lận tài chính theo thời gian thực.</p>
+      <p style="margin-top:8px;"><b>Tập dữ liệu:</b> Chuẩn quốc tế <b>IEEE-CIS Fraud Detection</b> từ Kaggle với hơn
+        590.000 giao dịch thẻ.</p>
+      <p style="margin-top:8px;"><b>Mô hình triển khai:</b> Kết hợp Ensemble giữa <b>Neural Network</b> (học biểu diễn
+        phi tuyến sâu) và <b>Random Forest</b> (cây quyết định dựa trên đặc trưng tần suất) đạt chỉ số <b>PR-AUC
+          0.738</b> và <b>ROC-AUC 0.927</b> trên tập kiểm thử độc lập.</p>
+    </div>
+  </dialog>
+
+  <dialog id="imgModal" style="text-align:center; padding:16px;">
+    <div style="text-align:right; margin-bottom:8px;">
+      <button class="btn-ghost" onclick="closeDlg('imgModal')">✕ Đóng ảnh</button>
+    </div>
+    <img id="imgZoomTarget" src="" alt="Zoom Image">
+  </dialog>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script>
+    (function () {
+      const n = (s) => document.querySelector(s);
+      const nn = (s) => document.querySelectorAll(s);
+
+      // Formatting helpers
+      const fmt = (n) => (n == null ? '–' : Number(n).toLocaleString('vi-VN'));
+      const pct = (x, d = 1) => (x == null ? '–' : (x * 100).toFixed(d).replace('.', ',') + '%');
+      const num = (x, d = 3) => (x == null ? '–' : Number(x).toFixed(d).replace('.', ','));
+      const money = (x) => (x == null ? '–' : '$' + Number(x).toLocaleString('vi-VN', { maximumFractionDigits: 0 }));
+
+      const state = {
+        thr: 0.5,
+        defaultThr: 0.5,
+        model: null,
+        experiments: null,
+        page: 1,
+        seq: 0
+      };
+
+      const charts = {};
+
+      async function api(path, params = {}, options = {}) {
+        const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v !== '' && v != null));
+        const res = await fetch('/api/' + path + (qs.toString() ? '?' + qs : ''), options);
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(body.error || res.statusText);
+        return body;
+      }
+
+      // Theme Management
+      function initTheme() {
+        const saved = localStorage.getItem('fraudradar_theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', saved);
+        n('#themeIcon').textContent = saved === 'dark' ? '🌙' : '☀️';
+      }
+      n('#btnThemeToggle').addEventListener('click', () => {
+        const cur = document.documentElement.getAttribute('data-theme') || 'dark';
+        const next = cur === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        localStorage.setItem('fraudradar_theme', next);
+        n('#themeIcon').textContent = next === 'dark' ? '🌙' : '☀️';
+        updateChartTheme();
+      });
+
+      function updateChartTheme() {
+        const isDark = (document.documentElement.getAttribute('data-theme') || 'dark') === 'dark';
+        if (window.Chart) {
+          Chart.defaults.color = isDark ? '#94a3b8' : '#475569';
+          Chart.defaults.borderColor = isDark ? '#1f293d' : '#e2e8f0';
+        }
+        refreshMonitoringOnly();
+      }
+
+      // Navigation Tab switching
+      nn('.nav-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          nn('.nav-tab').forEach(t => t.classList.remove('active'));
+          nn('.page-view').forEach(p => p.classList.remove('active'));
+          tab.classList.add('active');
+          const pageId = tab.dataset.page;
+          const page = n('#' + pageId);
+          if (page) page.classList.add('active');
+
+          if (pageId === 'page-transactions') loadAlerts();
+          if (pageId === 'page-ml') loadExperiments();
+        });
+      });
+
+      // Toggle detail box helper
+      window.toggleDetail = function (id) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const isShown = el.style.display === 'block';
+        el.style.display = isShown ? 'none' : 'block';
+        // Find the toggle button right above it
+        const btn = el.previousElementSibling;
+        if (btn && btn.classList.contains('btn-detail-toggle')) {
+          btn.textContent = isShown ? '📖 Chi tiết - Phân tích & Mô tả' : '▲ Thu gọn mô tả';
+        }
+      };
+
+      // Modal helpers
+      window.zoomImg = function (src) {
+        n('#imgZoomTarget').src = src;
+        const dlg = n('#imgModal');
+        if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+      };
+      window.closeDlg = function (id) {
+        const d = n('#' + id);
+        if (d.close) d.close(); else d.removeAttribute('open');
+      };
+      n('#btnAbout').addEventListener('click', () => {
+        const d = n('#aboutDialog');
+        if (d.showModal) d.showModal(); else d.setAttribute('open', '');
+      });
+
+      // -------------------------------------------------------------
+      // PAGE 1: MONITORING & KPIS
+      // -------------------------------------------------------------
+      function renderOverview(o) {
+        const m = o.metrics;
+        const atDefault = Math.abs(state.thr - state.defaultThr) < 1e-6;
+        const tr = state.model && state.model.test_metrics
+          ? Object.entries(state.model.test_metrics).find(([k]) => k.startsWith('Ensemble'))?.[1] : null;
+        const trainText = (k) => (atDefault && tr ? ' | Khi huấn luyện: ' + num(tr[k]) : '');
+
+        const kpiCards = [
+          { label: 'Tổng số giao dịch', val: fmt(o.total), sub: 'Tập test độc lập (Model ' + o.model_version + ')', color: '' },
+          { label: 'Bị cảnh báo rủi ro', val: fmt(o.flagged), sub: pct(o.flagged_rate) + ' tổng số · ' + money(o.flagged_amount), color: 'kpi-red' },
+          { label: 'Độ chính xác (Precision)', val: pct(m.precision), sub: 'Trong số ca báo động, có bấy nhiêu là fraud thật' + trainText('precision'), color: 'kpi-amber' },
+          { label: 'Độ nhạy bắt trúng (Recall)', val: pct(m.recall), sub: 'Trong số fraud thật, mô hình tóm được bấy nhiêu' + trainText('recall'), color: 'kpi-green' },
+          { label: 'F1-Score', val: num(m.f1), sub: 'Trung bình điều hòa giữa Precision & Recall' + trainText('f1'), color: 'kpi-purple' },
+          { label: 'Precision hiệu chỉnh', val: pct(m.precision_adjusted), sub: 'Ước tính ngoài thực tế tỷ lệ 3.5%', color: 'kpi-amber' },
+          { label: 'Thiệt hại ngăn chặn', val: money(o.amount_caught), sub: 'Bỏ sót ngoài ngưỡng: ' + money(o.amount_missed), color: 'kpi-green' },
+        ];
+
+        const kpiBox = n('#kpiBox');
+        kpiBox.innerHTML = kpiCards.map(c => `
+      <div class="kpi-card ${c.color}">
+        <div class="kpi-label">${c.label}</div>
+        <div class="kpi-value">${c.val}</div>
+        <div class="kpi-sub">${c.sub}</div>
+      </div>
+    `).join('');
+
+        // Confusion Matrix
+        n('#cmThresholdTag').textContent = 'Ngưỡng hiện tại: ' + num(state.thr, 2);
+        const posTotal = m.tp + m.fn, negTotal = m.fp + m.tn;
+        n('#cmTableBox').innerHTML = `
+      <table class="cm-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Dự đoán: BÌNH THƯỜNG</th>
+            <th>Dự đoán: GIAN LẬN (FRAUD)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th>Thực tế: BÌNH THƯỜNG</th>
+            <td class="cm-cell cm-tn">${fmt(m.tn)}<small>True Negative (${pct(negTotal ? m.tn / negTotal : 0)} của hàng)</small></td>
+            <td class="cm-cell cm-fp">${fmt(m.fp)}<small>Báo động giả (${pct(negTotal ? m.fp / negTotal : 0)} của hàng)</small></td>
+          </tr>
+          <tr>
+            <th>Thực tế: GIAN LẬN</th>
+            <td class="cm-cell cm-fn">${fmt(m.fn)}<small>Bỏ sót lọt lưới (${pct(posTotal ? m.fn / posTotal : 0)} của hàng)</small></td>
+            <td class="cm-cell cm-tp">${fmt(m.tp)}<small>Bắt trúng (${pct(posTotal ? m.tp / posTotal : 0)} của hàng)</small></td>
+          </tr>
+        </tbody>
+      </table>
+    `;
+      }
+
+      function draw(id, config) {
+        if (!window.Chart) return;
+        if (charts[id]) charts[id].destroy();
+        charts[id] = new Chart(document.getElementById(id), config);
+      }
+
+      function renderPR(curve, overview) {
+        const pts = curve.filter((c) => c.precision != null).map((c) => ({ x: c.recall, y: c.precision }));
+        const adj = curve.filter((c) => c.precision_adjusted != null).map((c) => ({ x: c.recall, y: c.precision_adjusted }));
+        const m = overview.metrics;
+        draw('chartPR', {
+          type: 'scatter',
+          data: {
+            datasets: [
+              { label: 'Precision (Mẫu test 10%)', data: pts, showLine: true, borderColor: '#3b82f6', backgroundColor: '#3b82f6', pointRadius: 0, tension: 0.2 },
+              { label: 'Precision hiệu chỉnh (Thực tế 3.5%)', data: adj, showLine: true, borderColor: '#f59e0b', borderDash: [5, 4], pointRadius: 0, tension: 0.2 },
+              { label: 'Ngưỡng hiện tại', data: m.recall != null && m.precision != null ? [{ x: m.recall, y: m.precision }] : [], backgroundColor: '#ef4444', pointRadius: 7 },
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              x: { min: 0, max: 1, title: { display: true, text: 'Recall (Độ nhạy)' } },
+              y: { min: 0, max: 1, title: { display: true, text: 'Precision (Độ chính xác)' } }
+            },
+            plugins: { legend: { position: 'bottom' } }
+          }
+        });
+      }
+
+      function renderHourly(rows) {
+        const by = new Map(rows.map(r => [r.hour, r]));
+        const hours = Array.from({ length: 24 }, (_, h) => h);
+        const get = (h, k) => (by.has(h) ? by.get(h)[k] : null);
+        draw('chartHour', {
+          data: {
+            labels: hours.map(h => h + 'h'),
+            datasets: [
+              { type: 'bar', label: 'Số giao dịch', data: hours.map(h => get(h, 'total') ?? 0), backgroundColor: 'rgba(100, 116, 139, 0.3)', yAxisID: 'y1', order: 3 },
+              { type: 'line', label: 'Tỷ lệ fraud thực tế (%)', data: hours.map(h => (get(h, 'actual_fraud_rate') ?? 0) * 100), borderColor: '#ef4444', backgroundColor: '#ef4444', tension: 0.25, yAxisID: 'y', order: 1 },
+              { type: 'line', label: 'Tỷ lệ bị cảnh báo (%)', data: hours.map(h => (get(h, 'flagged_rate') ?? 0) * 100), borderColor: '#3b82f6', backgroundColor: '#3b82f6', tension: 0.25, yAxisID: 'y', order: 2 },
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: { beginAtZero: true, title: { display: true, text: '% Giao dịch' } },
+              y1: { position: 'right', beginAtZero: true, grid: { drawOnChartArea: false }, title: { display: true, text: 'Số lượng GD' } }
+            },
+            plugins: { legend: { position: 'bottom' } }
+          }
+        });
+      }
+
+      function renderWeekly(rows) {
+        const line = (label, key, color) => ({
+          label, data: rows.map(r => r[key]), borderColor: color, backgroundColor: color, tension: 0.25, pointRadius: 2
+        });
+        draw('chartWeek', {
+          type: 'line',
+          data: {
+            labels: rows.map(r => 'Tuần ' + (r.week + 1)),
+            datasets: [
+              line('Fraud thực tế', 'actual_fraud', '#ef4444'),
+              line('Bị cảnh báo', 'flagged', '#3b82f6'),
+              line('Bắt trúng (TP)', 'caught', '#10b981')
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true, title: { display: true, text: 'Số lượng' } } },
+            plugins: { legend: { position: 'bottom' } }
+          }
+        });
+      }
+
+      function renderDist(d) {
+        const labels = Array.from({ length: d.bins }, (_, i) => (i / d.bins).toFixed(2));
+        const toPct = (arr, total) => arr.map(v => (total ? (v / total) * 100 : 0));
+        const thrLine = {
+          id: 'thrLine',
+          afterDatasetsDraw(chart) {
+            const { ctx, chartArea, scales } = chart;
+            const x = scales.x.getPixelForValue(state.thr * d.bins - 0.5);
+            ctx.save();
+            ctx.strokeStyle = '#f59e0b';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 4]);
+            ctx.beginPath();
+            ctx.moveTo(x, chartArea.top);
+            ctx.lineTo(x, chartArea.bottom);
+            ctx.stroke();
+            ctx.restore();
+          }
+        };
+        draw('chartDist', {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [
+              { label: 'Bình thường (Thực tế)', data: toPct(d.normal, d.normal_total), backgroundColor: 'rgba(59, 130, 246, 0.7)' },
+              { label: 'Gian lận (Thực tế)', data: toPct(d.fraud, d.fraud_total), backgroundColor: 'rgba(239, 68, 68, 0.75)' }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              x: { title: { display: true, text: 'Khoảng điểm rủi ro mô hình chấm (0.00 - 1.00)' } },
+              y: { title: { display: true, text: '% Tỷ lệ phân phối' } }
+            },
+            plugins: { legend: { position: 'bottom' } }
+          },
+          plugins: [thrLine]
+        });
+      }
+
+      function renderProduct(rows) {
+        draw('chartProd', {
+          type: 'bar',
+          data: {
+            labels: rows.map(r => r.product + ' (n=' + fmt(r.total) + ')'),
+            datasets: [
+              { label: 'Tỷ lệ fraud thực tế (%)', data: rows.map(r => (r.actual_fraud_rate ?? 0) * 100), backgroundColor: '#ef4444' },
+              { label: 'Tỷ lệ bị cảnh báo (%)', data: rows.map(r => (r.flagged_rate ?? 0) * 100), backgroundColor: '#3b82f6' }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true, title: { display: true, text: '% Tỷ lệ' } } },
+            plugins: { legend: { position: 'bottom' } }
+          }
+        });
+
+        const sel = n('#fProduct');
+        if (sel.options.length <= 1) {
+          rows.forEach(r => {
+            const opt = document.createElement('option');
+            opt.value = r.product;
+            opt.textContent = r.product + ' (' + fmt(r.total) + ')';
+            sel.appendChild(opt);
+          });
+        }
+      }
+
+      // -------------------------------------------------------------
+      // PAGE 3: ML MODELS & EXPERIMENTS
+      // -------------------------------------------------------------
+      async function loadExperiments() {
+        if (state.experiments) return;
+        try {
+          const data = await api('stats/experiments');
+          state.experiments = data;
+          renderModelComparison(data.models || []);
+        } catch (e) {
+          console.error('Không tải được danh sách mô hình', e);
+        }
+      }
+
+      function renderModelComparison(models) {
+        const tbody = n('#modelCompRows');
+        if (!models.length) {
+          tbody.innerHTML = '<tr><td colspan="8">Chưa có dữ liệu thí nghiệm.</td></tr>';
+          return;
+        }
+
+        const friendlyNames = {
+          'Ensemble_NN_RF_thr': { name: 'Ensemble (NN + RF) [Đang phục vụ]', method: 'Kết hợp trọng số NN (60%) + RF (40%)', thr: '0.683', best: true },
+          'NN_final_thr': { name: 'Neural Network (Đã tối ưu)', method: 'Dropout 0.15 + L2 1e-4 + Log-transform', thr: '0.753' },
+          'RF_fair_thr': { name: 'Random Forest (Có đặc trưng tần suất)', method: '200 cây + card1_freq + addr1_freq', thr: '0.571' },
+          'NN_optimized_thr': { name: 'Neural Network (Chưa BatchNorm)', method: '2 tầng ẩn (256, 128) + Log-transform', thr: '0.650' },
+          'RF_balanced_thr': { name: 'Random Forest (Balanced weights)', method: 'Class weight balanced + Ngưỡng tối ưu', thr: '0.550' },
+          'RandomForest_balanced': { name: 'Random Forest (Mặc định 0.5)', method: 'Class weight balanced (ngưỡng 0.5)', thr: '0.500' },
+          'RandomForest_smote': { name: 'Random Forest (Huấn luyện SMOTE)', method: 'Over-sampling bằng SMOTE', thr: '0.500' },
+          'NN_baseline_thr': { name: 'Neural Network (Baseline có chỉnh ngưỡng)', method: 'Mạng cơ bản không điều chuẩn', thr: '0.600' },
+          'NN_baseline': { name: 'Neural Network (Baseline mặc định 0.5)', method: 'Mạng cơ bản ngưỡng 0.5', thr: '0.500' },
+          'LogisticRegression_smote': { name: 'Logistic Regression (SMOTE)', method: 'Hồi quy Logistic trên tập cân bằng', thr: '0.500' },
+          'LogisticRegression_balanced': { name: 'Logistic Regression (Balanced)', method: 'Hồi quy Logistic trọng số nghịch đảo', thr: '0.500' },
+        };
+
+        tbody.innerHTML = models.map(m => {
+          const meta = friendlyNames[m.model_name] || { name: m.model_name, method: 'Chuẩn hóa', thr: '0.500' };
+          const rowStyle = meta.best ? 'background: rgba(16, 185, 129, 0.1); font-weight: 600;' : '';
+          const badge = meta.best ? '<span class="badge badge-low" style="margin-left:6px;">Tốt nhất 🏆</span>' : '';
+          return `
+        <tr style="${rowStyle}">
+          <td><b>${meta.name}</b> ${badge}</td>
+          <td style="color:var(--text-muted);">${meta.method}</td>
+          <td><code>${meta.thr}</code></td>
+          <td style="font-family:var(--font-mono);">${pct(m.precision)}</td>
+          <td style="font-family:var(--font-mono);">${pct(m.recall)}</td>
+          <td style="font-family:var(--font-mono);">${num(m.f1, 4)}</td>
+          <td style="font-family:var(--font-mono); color:var(--accent-light); font-weight:700;">${num(m.pr_auc, 4)}</td>
+          <td style="font-family:var(--font-mono);">${num(m.roc_auc, 4)}</td>
+        </tr>
+      `;
+        }).join('');
+      }
+
+      // -------------------------------------------------------------
+      // PAGE 4: TRANSACTION EXPLORER (CƠ BẢN VỮNG CHẮC)
+      // -------------------------------------------------------------
+      async function loadAlerts() {
+        const tbody = n('#alertRows');
+        try {
+          const data = await api('alerts', {
+            threshold: state.thr,
+            page: state.page,
+            pageSize: 15,
+            level: n('#fLevel').value,
+            product: n('#fProduct').value,
+            minAmount: n('#fAmount').value,
+            sort: n('#fSort').value,
+            source: n('#fSource').value,
+          });
+
+          if (!data.items || !data.items.length) {
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:24px; color:var(--text-muted);">Không có giao dịch nào khớp bộ lọc.</td></tr>';
+          } else {
+            tbody.innerHTML = data.items.map(r => {
+              const when = 'Ngày ' + (Math.floor(r.tx_dt / 86400) + 1) + ', ' + r.hour + 'h';
+              const prob = Number(r.fraud_probability || 0);
+              const probPct = Math.round(prob * 100);
+
+              let riskBadge = '<span class="badge badge-med">Trung bình</span>';
+              if (r.risk_level === 'high') riskBadge = '<span class="badge badge-high">Cao</span>';
+
+              let actualBadge = '<span class="badge badge-gray">Chưa nhãn</span>';
+              if (r.actual_fraud === true) actualBadge = '<span class="badge badge-high">Fraud</span>';
+              else if (r.actual_fraud === false) actualBadge = '<span class="badge badge-low">Bình thường</span>';
+
+              const cardDesc = [r.card4, r.card6].filter(Boolean).join(' / ') || ('ID ' + (r.card1 || '–'));
+
+              return `
+            <tr>
+              <td><b>${r.external_id ? '#' + r.external_id : '#' + r.id}</b></td>
+              <td>${when}</td>
+              <td style="font-family:var(--font-mono); font-weight:700;">$${fmt(r.amount)}</td>
+              <td><span class="chip" style="padding:2px 8px;">${r.product_cd || '–'}</span></td>
+              <td>${cardDesc}</td>
+              <td>
+                <div class="prob-bar-wrap">
+                  <div class="prob-bar"><div class="prob-fill" style="width:${probPct}%"></div></div>
+                  <span style="font-family:var(--font-mono); font-size:11px;">${num(prob, 3)}</span>
+                </div>
+              </td>
+              <td>${riskBadge}</td>
+              <td>${actualBadge}</td>
+              <td>
+                <button class="btn-ghost" style="padding:3px 8px; font-size:11px;" onclick="showDetail(${r.id})">Chi tiết</button>
+              </td>
+            </tr>
+          `;
+            }).join('');
+          }
+
+          n('#pageInfo').textContent = 'Trang ' + data.page + ' / ' + data.pages + ' · ' + fmt(data.total) + ' giao dịch';
+          n('#prev').disabled = data.page <= 1;
+          n('#next').disabled = data.page >= data.pages;
+        } catch (e) {
+          tbody.innerHTML = `<tr><td colspan="9" style="color:var(--red); text-align:center; padding:20px;">Lỗi tải dữ liệu: ${e.message}</td></tr>`;
+        }
+      }
+
+      n('#btnApplyTxFilter').addEventListener('click', () => { state.page = 1; loadAlerts(); });
+      ['fLevel', 'fProduct', 'fAmount', 'fSort', 'fSource'].forEach(id => {
+        n('#' + id).addEventListener('change', () => { state.page = 1; loadAlerts().catch(() => { }); });
+      });
+      n('#prev').addEventListener('click', () => { state.page = Math.max(1, state.page - 1); loadAlerts(); });
+      n('#next').addEventListener('click', () => { state.page += 1; loadAlerts(); });
+
+      window.showDetail = async function (id) {
+        try {
+          const d = await api('transactions/' + id);
+          const rows = [
+            ['Mã giao dịch', d.external_id ? '#' + d.external_id : '#' + d.id],
+            ['Nguồn dữ liệu', d.source === 'replay' ? 'Replay (Tập test Kaggle)' : 'Chấm qua API'],
+            ['Số tiền', '$' + fmt(d.amount)],
+            ['Thời điểm', 'Ngày ' + (Math.floor(d.tx_dt / 86400) + 1) + ', ' + d.hour + 'h (tương đối)'],
+            ['Điểm tổng hợp (Ensemble)', num(d.fraud_probability, 4) + ' (ngưỡng ' + num(d.ensemble_threshold, 3) + ')'],
+            ['Điểm Neural Network', num(d.nn_probability, 4)],
+            ['Điểm Random Forest', num(d.rf_probability, 4)],
+            ['Nhãn thực tế', d.actual_fraud === true ? 'Gian lận (Fraud)' : (d.actual_fraud === false ? 'Hợp lệ (Bình thường)' : 'Chưa có nhãn')],
+          ];
+          const payloadRows = Object.entries(d.payload || {}).map(([k, v]) => `<dt>${k}</dt><dd>${v != null ? v : '–'}</dd>`).join('');
+
+          n('#dlgBody').innerHTML = `
+        <dl class="meta-dl">${rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>
+        <div style="font-size:13px; font-weight:700; color:var(--text-primary); margin:14px 0 6px;">Các trường đầu vào gửi tới model</div>
+        <dl class="meta-dl" style="max-height:220px; overflow-y:auto; background:var(--bg-main); padding:10px; border-radius:var(--radius-md);">
+          ${payloadRows}
+        </dl>
+      `;
+          const dlg = n('#dlg');
+          if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+        } catch (e) {
+          alert('Không tải được chi tiết giao dịch: ' + e.message);
+        }
+      };
+      n('#dlgClose').addEventListener('click', () => closeDlg('dlg'));
+
+      // -------------------------------------------------------------
+      // PAGE 5: FRAUD SCORING SIMULATOR
+      // -------------------------------------------------------------
+      const PRESETS = {
+        legit: {
+          TransactionDT: 15000000, TransactionAmt: 120.5, ProductCD: 'W', card1: 9633, card4: 'visa', card6: 'debit',
+          addr1: 299, addr2: 87, dist1: 8, dist2: 41, P_emaildomain: 'gmail', R_emaildomain: null,
+          C1: 1, C2: 1, C6: 1, D1: 2, D4: 21, D10: 10, M4: 'M0', M6: 'T'
+        },
+        fraud: {
+          TransactionDT: 15025200, TransactionAmt: 850.0, ProductCD: 'W', card1: 14200, card4: 'visa', card6: 'debit',
+          addr1: 441, addr2: 87, dist1: 850, dist2: 240, P_emaildomain: 'anonymous', R_emaildomain: 'anonymous',
+          C1: 45, C2: 38, C6: 12, D1: 0, D4: 1, D10: 0, M4: 'M0', M6: 'F'
+        },
+        high_amt: {
+          TransactionDT: 15100000, TransactionAmt: 3250.0, ProductCD: 'C', card1: 5012, card4: 'american express', card6: 'credit',
+          addr1: 126, addr2: 87, dist1: 1420, dist2: 50, P_emaildomain: 'yahoo', R_emaildomain: null,
+          C1: 15, C2: 8, C6: 5, D1: 15, D4: 180, D10: 3, M4: 'M2', M6: 'T'
+        }
+      };
+
+      window.loadPreset = function (type) {
+        const data = PRESETS[type] || PRESETS.legit;
+        n('#sf_TransactionAmt').value = data.TransactionAmt;
+        n('#sf_TransactionDT').value = data.TransactionDT;
+        n('#sf_ProductCD').value = data.ProductCD;
+        n('#sf_card1').value = data.card1;
+        n('#sf_card4').value = data.card4;
+        n('#sf_card6').value = data.card6;
+        n('#sf_addr1').value = data.addr1;
+        n('#sf_addr2').value = data.addr2;
+        n('#sf_dist1').value = data.dist1;
+        n('#sf_dist2').value = data.dist2;
+        n('#sf_P_emaildomain').value = data.P_emaildomain;
+        n('#sf_C1').value = data.C1;
+        n('#sf_C2').value = data.C2;
+        n('#sf_C6').value = data.C6;
+        n('#sf_D1').value = data.D1;
+        n('#sf_D4').value = data.D4;
+        n('#sf_D10').value = data.D10;
+        n('#sf_M4').value = data.M4;
+        n('#sf_M6').value = data.M6;
+
+        n('#simJsonText').value = JSON.stringify(data, null, 2);
+      };
+
+      n('#btnModeForm').addEventListener('click', () => {
+        n('#btnModeForm').classList.add('active');
+        n('#btnModeJson').classList.remove('active');
+        n('#simFormView').style.display = 'block';
+        n('#simJsonView').style.display = 'none';
+      });
+      n('#btnModeJson').addEventListener('click', () => {
+        n('#btnModeJson').classList.add('active');
+        n('#btnModeForm').classList.remove('active');
+        n('#simFormView').style.display = 'none';
+        n('#simJsonView').style.display = 'block';
+        syncFormToJson();
+      });
+
+      function syncFormToJson() {
+        const obj = {
+          TransactionAmt: Number(n('#sf_TransactionAmt').value),
+          TransactionDT: Number(n('#sf_TransactionDT').value),
+          ProductCD: n('#sf_ProductCD').value,
+          card1: Number(n('#sf_card1').value),
+          card4: n('#sf_card4').value,
+          card6: n('#sf_card6').value,
+          addr1: Number(n('#sf_addr1').value) || null,
+          addr2: Number(n('#sf_addr2').value) || null,
+          dist1: Number(n('#sf_dist1').value) || null,
+          dist2: Number(n('#sf_dist2').value) || null,
+          P_emaildomain: n('#sf_P_emaildomain').value,
+          R_emaildomain: null,
+          C1: Number(n('#sf_C1').value) || 1,
+          C2: Number(n('#sf_C2').value) || 1,
+          C6: Number(n('#sf_C6').value) || 1,
+          D1: Number(n('#sf_D1').value) || 2,
+          D4: Number(n('#sf_D4').value) || 21,
+          D10: Number(n('#sf_D10').value) || 10,
+          M4: n('#sf_M4').value,
+          M6: n('#sf_M6').value,
+        };
+        n('#simJsonText').value = JSON.stringify(obj, null, 2);
+        return obj;
+      }
+
+      window.scoreCurrentTx = async function () {
+        const payload = syncFormToJson();
+        await executeScoring(payload);
+      };
+      n('#btnScoreJson').addEventListener('click', async () => {
+        try {
+          const payload = JSON.parse(n('#simJsonText').value);
+          await executeScoring(payload);
+        } catch (e) {
+          alert('JSON không hợp lệ: ' + e.message);
+        }
+      });
+
+      async function executeScoring(payload) {
+        const btn = n('#btnScoreForm');
+        btn.disabled = true;
+        const resBox = n('#scoreResultBox');
+        resBox.style.display = 'block';
+        resBox.innerHTML = '<div>⏳ Đang chấm điểm và phân tích rủi ro…</div>';
+
+        try {
+          const r = await api('transactions/score', {}, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          const prob = Number(r.fraud_probability || 0);
+          const isFraud = r.is_fraud;
+          const riskCls = isFraud ? 'badge-high' : (prob >= (state.thr * 0.5) ? 'badge-med' : 'badge-low');
+          const actionText = isFraud
+            ? '⛔ TỰ ĐỘNG CHẶN GIAO DỊCH (Gửi cảnh báo khẩn cấp tới bộ phận kiểm soát)'
+            : (prob >= (state.thr * 0.5) ? '⚠️ YÊU CẦU XÁC THỰC BỔ SUNG (Gửi OTP 3D-Secure)' : '✅ PHÊ DUYỆT TỰ ĐỘNG (Giao dịch hợp lệ an toàn)');
+
+          resBox.innerHTML = `
+        <div class="card-header">
+          <div class="card-title">Kết quả phân tích rủi ro thời gian thực</div>
+          <span class="badge ${riskCls}" style="font-size:12px; padding:4px 12px;">
+            ${isFraud ? 'CẢNH BÁO GIAN LẬN' : 'GIAO DỊCH AN TOÀN'}
+          </span>
+        </div>
+
+        <div class="gauge-box">
+          <div>
+            <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Xác suất gian lận tổng hợp (Ensemble)</div>
+            <div class="score-number" style="color:${isFraud ? 'var(--red)' : 'var(--green)'};">
+              ${(prob * 100).toFixed(1)}%
+            </div>
+            <div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">
+              Điểm số: <b>${num(prob, 4)}</b> (Ngưỡng mô hình: <b>${num(state.thr, 3)}</b>)
+            </div>
+          </div>
+
+          <div style="flex:1; min-width:240px; border-left:1px solid var(--border); padding-left:16px;">
+            <div style="font-size:12px; margin-bottom:6px;">
+              Mô hình Neural Network: <b style="font-family:var(--font-mono);">${num(r.nn_probability, 4)}</b>
+            </div>
+            <div style="font-size:12px; margin-bottom:6px;">
+              Mô hình Random Forest: <b style="font-family:var(--font-mono);">${num(r.rf_probability, 4)}</b>
+            </div>
+            <div style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">
+              Đã ghi nhận vào cơ sở dữ liệu với <b>ID #${r.id}</b> · Model: <code>${r.model_version}</code>
+            </div>
+            <div style="padding:8px 12px; border-radius:var(--radius-sm); background:rgba(255,255,255,0.03); font-size:12px; font-weight:700;">
+              Khuyến nghị hệ thống: <span style="color:${isFraud ? 'var(--red)' : 'var(--green)'};">${actionText}</span>
+            </div>
+          </div>
+        </div>
+      `;
+
+          refreshMonitoringOnly();
+        } catch (e) {
+          resBox.innerHTML = `<div style="color:var(--red);">Lỗi chấm điểm: ${e.message}</div>`;
+        } finally {
+          btn.disabled = false;
+        }
+      }
+
+      // -------------------------------------------------------------
+      // REFRESH & INIT
+      // -------------------------------------------------------------
+      async function refreshMonitoringOnly() {
+        const q = { threshold: state.thr };
+        const mySeq = ++state.seq;
+        try {
+          const [ov, hourly, weekly, dist, pr, prod] = await Promise.all([
+            api('overview', q),
+            api('stats/hourly', q),
+            api('stats/weekly', q),
+            api('stats/score-distribution', q),
+            api('stats/pr-curve', q),
+            api('stats/by-product', q)
+          ]);
+          if (mySeq !== state.seq) return;
+          renderOverview(ov);
+          renderHourly(hourly);
+          renderWeekly(weekly);
+          renderDist(dist);
+          renderPR(pr, ov);
+          renderProduct(prod);
+        } catch (e) {
+          console.error('Không tải được giám sát:', e);
+        }
+      }
+
+      function setThreshold(v) {
+        state.thr = v;
+        n('#globalThr').value = v;
+        n('#globalThrVal').textContent = num(v, 2);
+      }
+
+      async function init() {
+        initTheme();
+        loadPreset('legit');
+
+        try {
+          state.model = await api('model');
+          state.defaultThr = state.model.thresholds.ensemble;
+          setThreshold(Math.min(0.95, Math.max(0.05, state.defaultThr)));
+          n('#modelName').textContent = `Model ${state.model.version} (Ensemble NN ${pct(state.model.thresholds.weight_nn, 0)} + RF)`;
+        } catch (e) {
+          console.warn('Chưa có thông tin model:', e);
+        }
+
+        // Threshold slider
+        let timer;
+        n('#globalThr').addEventListener('input', (e) => {
+          setThreshold(Number(e.target.value));
+          clearTimeout(timer);
+          timer = setTimeout(() => {
+            refreshMonitoringOnly();
+            if (n('#page-transactions').classList.contains('active')) loadAlerts();
+          }, 250);
+        });
+
+        n('#btnResetThr').addEventListener('click', () => {
+          setThreshold(Math.min(0.95, Math.max(0.05, state.defaultThr)));
+          refreshMonitoringOnly();
+          if (n('#page-transactions').classList.contains('active')) loadAlerts();
+        });
+
+        await refreshMonitoringOnly();
+        await loadAlerts();
+      }
+
+      init();
+    })();
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,73 @@
+# ==========================================
+# 1. Dữ liệu (Data Files & Datasets)
+# ==========================================
+1_data/
+*.csv
+*.tsv
+*.xlsx
+*.xls
+*.parquet
+*.feather
+*.h5
+*.hdf5
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# ==========================================
+# 2. File mô hình & Trọng số Machine Learning
+# ==========================================
+4_models/
+*.pkl
+*.pickle
+*.joblib
+*.keras
+*.pt
+*.pth
+*.onnx
+*.bin
+*.weights
+
+# ==========================================
+# 3. Thông tin nhạy cảm / Secrets / Credentials
+# ==========================================
+.env
+.env.*
+*.env
+!.env.example
+*.pem
+*.key
+*.cert
+secrets.json
+
+# ==========================================
+# 4. Node.js / NPM (Frontend & API)
+# ==========================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ==========================================
+# 5. Môi trường ảo Python & Jupyter Notebook
+# ==========================================
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+ENV/
+.ipynb_checkpoints/
+
+# ==========================================
+# 6. Cấu hình IDE & Hệ điều hành
+# ==========================================
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+Thumbs.db
+desktop.ini

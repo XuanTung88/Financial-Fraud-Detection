@@ -1,6 +1,5 @@
 # Hệ thống phân tích hành vi và phát hiện giao dịch tài chính bất thường
 
-Đồ án học tập kết hợp 3 môn: **Học máy và Khai phá dữ liệu**, **Phân tích và Trực quan hóa dữ liệu**, **Ngôn ngữ kịch bản (Node.js)**.
 
 Bài toán: dự đoán một giao dịch thẻ có phải gian lận hay không (phân loại có nhãn), dùng bộ dữ liệu **IEEE-CIS Fraud Detection** (Kaggle), so sánh 3 thuật toán **Logistic Regression**, **Random Forest**, **Neural Network**, rồi đưa kết quả lên dashboard web (Node.js + PostgreSQL).
 
@@ -156,7 +155,7 @@ Tạo file tên `.env` (không có phần tên trước dấu chấm) trong `6_a
 
 ```
 PORT=3000
-DATABASE_URL=postgresql://fraud:fraud123@localhost:5432/fraud_db
+DATABASE_URL=Điền theo link của bạn
 ML_SERVICE_URL=http://localhost:8000
 BASE_PREVALENCE=0.035
 ```
@@ -196,7 +195,7 @@ python seed_db.py              # đổ 30.000 giao dịch test vào PostgreSQL
 Nếu mật khẩu PostgreSQL khác mặc định:
 
 ```bash
-python seed_db.py --dsn postgresql://fraud:MATKHAU@localhost:5432/fraud_db
+python seed_db.py 
 ```
 
 Nạp lại từ đầu (xóa dữ liệu replay cũ): `python seed_db.py --reset`.
